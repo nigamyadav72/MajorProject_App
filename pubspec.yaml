@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   
+  
   # HTTP requests
   http: ^1.1.0
   
