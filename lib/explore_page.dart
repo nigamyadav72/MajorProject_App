@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
-import 'providers/product_provider.dart';
-import 'widgets/product_card.dart';
+import '../providers/product_provider.dart';
+import '../widgets/product_card.dart';
+import '../models/category.dart';
 
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
@@ -12,37 +15,55 @@ class ExplorePage extends StatefulWidget {
 }
 
 class _ExplorePageState extends State<ExplorePage> {
-  String _searchQuery = '';
-  String _selectedCategory = 'All';
+  Timer? _debounce;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(context, listen: false).fetchCategories();
+      final provider = Provider.of<ProductProvider>(context, listen: false);
+      provider.fetchCategories();
+      provider.fetchProducts();
     });
   }
 
   @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Visual search coming soon 🚀')),
+      );
+    }
+  }
+
+  void _loadPage(int page) {
+    Provider.of<ProductProvider>(context, listen: false)
+        .fetchProducts(page: page);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final productProvider = Provider.of<ProductProvider>(context);
-    if (productProvider.isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Explore Products')),
-        body: const Center(child: CircularProgressIndicator()),
+    final provider = Provider.of<ProductProvider>(context);
+
+    // 🔥 SYNC search field with provider search (Home → Explore)
+    if (_searchController.text != provider.searchQuery) {
+      _searchController.text = provider.searchQuery;
+      _searchController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _searchController.text.length),
       );
     }
-    if (productProvider.error != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Explore Products')),
-        body: Center(child: Text('Error: ${productProvider.error}')),
-      );
-    }
-    final categories = productProvider.categories.isNotEmpty
-        ? productProvider.categories
-        : ['All'];
-    final filteredProducts =
-        productProvider.getFilteredProducts(_selectedCategory, _searchQuery);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Explore Products'),
@@ -50,36 +71,80 @@ class _ExplorePageState extends State<ExplorePage> {
           preferredSize: const Size.fromHeight(120),
           child: Column(
             children: [
+              // 🔍 Search Field with Autocomplete + Debounce
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: TextField(
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: "Search products...",
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+                child: Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue value) {
+                    if (value.text.isEmpty) {
+                      return const Iterable<String>.empty();
+                    }
+
+                    return provider.products
+                        .map((p) => p.name)
+                        .where((name) => name
+                            .toLowerCase()
+                            .contains(value.text.toLowerCase()))
+                        .toList();
+                  },
+                  onSelected: (String selection) {
+                    provider.changeSearch(selection);
+                  },
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onEditingComplete) {
+                    return TextField(
+                      controller: _searchController,
+                      focusNode: focusNode,
+                      onChanged: (value) {
+                        if (_debounce?.isActive ?? false) {
+                          _debounce!.cancel();
+                        }
+
+                        _debounce =
+                            Timer(const Duration(milliseconds: 300), () {
+                          provider.setSearchQuery(value);
+                        });
+                      },
+                      onSubmitted: (value) {
+                        provider.changeSearch(value);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search products...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: IconButton(
+                          icon: const Icon(Icons.camera_alt),
+                          onPressed: _pickImageFromCamera,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
+
+              // 🏷️ Category Chips
               SizedBox(
-                height: 50,
+                height: 46,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  itemCount: categories.length,
+                  itemCount: provider.categories.length,
                   itemBuilder: (context, index) {
-                    final category = categories[index];
+                    final Category category = provider.categories[index];
+                    final bool selected = category == provider.selectedCategory;
+
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: FilterChip(
-                        label: Text(category),
-                        selected: _selectedCategory == category,
-                        onSelected: (selected) {
-                          setState(() => _selectedCategory = category);
+                        label: Text(category.name),
+                        selected: selected,
+                        onSelected: (_) {
+                          provider.changeCategory(category);
+                          _loadPage(1);
                         },
                       ),
                     );
@@ -90,18 +155,85 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
         ),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: filteredProducts.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.72,
-        ),
-        itemBuilder: (context, index) {
-          return ProductCard(product: filteredProducts[index]);
-        },
+
+      // 🛍 PRODUCT GRID
+      body: Column(
+        children: [
+          Expanded(
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : provider.error != null
+                    ? Center(child: Text(provider.error!))
+                    : provider.filteredProducts.isEmpty
+                        ? const Center(child: Text('No products found'))
+                        : GridView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: provider.filteredProducts.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.65,
+                            ),
+                            itemBuilder: (context, index) {
+                              return ProductCard(
+                                product: provider.filteredProducts[index],
+                              );
+                            },
+                          ),
+          ),
+
+          // 🔥 Pagination
+          if (!provider.isLoading && provider.totalPages > 1)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: provider.hasPrevious
+                        ? () => _loadPage(provider.currentPage - 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_left),
+                    label: const Text('Previous'),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Page ${provider.currentPage}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: provider.hasNext
+                        ? () => _loadPage(provider.currentPage + 1)
+                        : null,
+                    icon: const Icon(Icons.chevron_right),
+                    label: const Text('Next'),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

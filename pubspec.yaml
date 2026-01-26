@@ -11,6 +11,9 @@ dependencies:
     sdk: flutter
   
   
+  flutter_secure_storage: ^9.0.0
+  google_sign_in: ^6.2.1
+  
   # HTTP requests
   http: ^1.1.0
   
@@ -46,3 +49,4 @@ flutter:
   assets:
     - assets/images/
     - assets/logo.png
+    - assets/google.png
