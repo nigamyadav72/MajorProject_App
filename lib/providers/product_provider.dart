@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
-import '../models/product_detail.dart';
 import '../models/category.dart';
 import '../services/api_service.dart';
 
@@ -143,80 +142,65 @@ class ProductProvider extends ChangeNotifier {
 
     try {
       final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
-      debugPrint('🔍 VISUAL SEARCH RAW RESULTS FROM SERVER: $results');
+      debugPrint('🔍 VISUAL SEARCH: Received ${results.length} raw results from server');
       
-      // Temporary: low threshold (10%) to see if ANYTHING comes through
+      // Filter by confidence (10% threshold)
       final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) >= 0.1).toList();
-      debugPrint('🔍 Results above 10% threshold: ${filteredResults.length}');
+      debugPrint('🔍 VISUAL SEARCH: ${filteredResults.length} results pass 10% threshold');
 
       if (filteredResults.isEmpty) {
-        debugPrint('⚠️ NO RESULTS PASS THE 10% THRESHOLD');
         _visualSearchResults = [];
       } else {
-        debugPrint('🔍 Searching for Products matching SKUs: ${filteredResults.map((e) => e['sku']).toList()}');
-        
-        final List<Future<VisualSearchResult?>> detailFutures = filteredResults.map((res) async {
-          try {
-            final String sku = res['sku'];
-            
-            // 1. Try fetching by ID first (in case SKU == ID)
-            ProductDetail? productDetail;
-            if (int.tryParse(sku) != null) {
-              productDetail = await _apiService.fetchProductDetail(int.parse(sku));
-            }
+        // 1. Extract all unique SKUs
+        final List<String> skus = filteredResults.map((e) => e['sku'].toString()).toSet().toList();
+        debugPrint('🔍 VISUAL SEARCH: Requesting products for SKUs: $skus');
 
-            // 2. If not found, search for product by SKU string
-            if (productDetail == null) {
-              debugPrint('🔍 SKU $sku not found by ID, searching via name/sku search...');
-              final searchResult = await _apiService.fetchProducts(page: 1, limit: 1, search: sku);
-              final List<Product> searchProducts = searchResult['products'];
-              
-              if (searchProducts.isNotEmpty) {
-                // Fetch the detail of the first match
-                productDetail = await _apiService.fetchProductDetail(int.parse(searchProducts.first.id));
-              }
-            }
+        // 2. Fetch all products in one bulk request
+        final List<Product> matchedProducts = await _apiService.fetchProductsBySkus(skus);
+        debugPrint('✅ VISUAL SEARCH: Backend returned ${matchedProducts.length} unique products');
 
-            if (productDetail != null) {
-              debugPrint('✅ MATCH FOUND: ${productDetail.product.name} (SKU: $sku)');
-              return VisualSearchResult(
-                product: productDetail.product,
-                confidence: res['confidence'] ?? 0.0,
-              );
-            } else {
-              debugPrint('❌ NO DB MATCH: Could not find product with SKU $sku');
-            }
-          } catch (e) {
-            debugPrint('⚠️ Error matching SKU ${res['sku']}: $e');
+        // 3. Map SKUs to Confidence scores for easy lookup
+        final Map<String, double> skuScores = {
+          for (var res in filteredResults) res['sku'].toString(): res['confidence'] as double
+        };
+
+        // 4. Create final results by linking fetched products to their scores
+        final List<VisualSearchResult> finalResults = [];
+        for (var product in matchedProducts) {
+          // We need to know which SKU this product belongs to.
+          // Usually, the SKU is a field in the product. 
+          // Since our Product model doesn't have a 'sku' field yet, 
+          // we'll try to match by ID (if ID == SKU) or search the scores map.
+          
+          double score = 0.0;
+          // Strategy: Try exact ID match first
+          if (skuScores.containsKey(product.id)) {
+            score = skuScores[product.id]!;
+          } else {
+            // Fallback: Product name contains SKU or similar logic 
+            // OR just use the highest score if we only have one match
+            score = skuScores.values.isNotEmpty ? skuScores.values.first : 0.0;
           }
-          return null;
-        }).toList();
 
-        final List<VisualSearchResult?> fetchedResults = await Future.wait(detailFutures);
-        final List<VisualSearchResult> allMatches = fetchedResults.whereType<VisualSearchResult>().toList();
-
-        // Deduplicate by Product ID (keep highest confidence)
-        final Map<String, VisualSearchResult> uniqueResults = {};
-        for (var match in allMatches) {
-          final id = match.product.id;
-          if (!uniqueResults.containsKey(id) || match.confidence > uniqueResults[id]!.confidence) {
-            uniqueResults[id] = match;
-          }
+          finalResults.add(VisualSearchResult(
+            product: product,
+            confidence: score,
+          ));
         }
 
-        _visualSearchResults = uniqueResults.values.toList();
-        
-        // Sort by confidence descending
+        // 5. Finalize state
+        _visualSearchResults = finalResults;
         _visualSearchResults.sort((a, b) => b.confidence.compareTo(a.confidence));
         
-        debugPrint('🏁 FINAL DEDUPLICATED RESULTS DISPLAYED: ${_visualSearchResults.length}');
+        debugPrint('🏁 VISUAL SEARCH: Final unique products: ${_visualSearchResults.length}');
       }
     } catch (e) {
-      debugPrint('🚨 PROVIDER CRITICAL ERROR: $e');
+      debugPrint('🚨 VISUAL SEARCH CRITICAL: $e');
       _error = 'Visual Search Failed: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
+      debugPrint('📢 notifyListeners() called. Displaying ${_visualSearchResults.length} results.');
     }
   }
 

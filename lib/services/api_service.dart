@@ -65,6 +65,33 @@ class ApiService {
   }
 
   // ============================
+  // ✅ FETCH PRODUCTS BY SKUS (BULK)
+  // ============================
+  Future<List<Product>> fetchProductsBySkus(List<String> skus) async {
+    try {
+      final uri = Uri.parse('$baseUrl/products/by-skus/');
+      debugPrint('🚀 Fetch Products by SKUs: $uri with ${skus.length} SKUs');
+      
+      final response = await _client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'skus': skus}),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        debugPrint('⚠️ Bulk SKU search failed: ${response.statusCode}');
+        return [];
+      }
+
+      final List<dynamic> decoded = json.decode(response.body);
+      return decoded.map((e) => Product.fromJson(e)).toList();
+    } catch (e) {
+      debugPrint('❌ Error in bulk SKU search: $e');
+      return [];
+    }
+  }
+
+  // ============================
   // ✅ FETCH PRODUCT BY ID (DETAIL)
   // ============================
   Future<ProductDetail?> fetchProductDetail(int id) async {
