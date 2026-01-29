@@ -142,23 +142,30 @@ class ProductProvider extends ChangeNotifier {
 
     try {
       final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
+      debugPrint('🔍 Raw AI Results: $results');
       
-      // Filter by 50% confidence
+      // Filter by 50% confidence (0.5)
       final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) >= 0.5).toList();
+      debugPrint('🔍 Filtered Results (>= 0.5): ${filteredResults.length}');
 
       if (filteredResults.isEmpty) {
+        debugPrint('⚠️ No results passed the 0.5 similarity threshold');
         _visualSearchResults = [];
       } else {
-        // Fetch all product details in parallel for maximum speed
+        // Fetch all product details in parallel
+        debugPrint('🔍 Fetching details for ${filteredResults.length} matching IDs...');
         final List<Future<VisualSearchResult?>> detailFutures = filteredResults.map((res) async {
           try {
             final productId = res['id'];
             final productDetail = await _apiService.fetchProductDetail(productId);
             if (productDetail != null) {
+              debugPrint('✅ Found Product in DB: ${productDetail.product.name} (ID: $productId)');
               return VisualSearchResult(
                 product: productDetail.product,
                 confidence: res['confidence'] ?? 0.0,
               );
+            } else {
+              debugPrint('❌ Product ID $productId NOT found in main Database');
             }
           } catch (e) {
             debugPrint('⚠️ Error fetching detail for ID ${res['id']}: $e');
@@ -167,11 +174,11 @@ class ProductProvider extends ChangeNotifier {
         }).toList();
 
         final List<VisualSearchResult?> fetchedResults = await Future.wait(detailFutures);
-        
-        // Remove nulls and update results
         _visualSearchResults = fetchedResults.whereType<VisualSearchResult>().toList();
+        debugPrint('✅ Final Visual Search Count: ${_visualSearchResults.length}');
       }
     } catch (e) {
+      debugPrint('❌ Visual Search Provider Error: $e');
       _error = 'Visual Search Failed: $e';
     } finally {
       _isLoading = false;
