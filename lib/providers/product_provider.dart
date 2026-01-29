@@ -143,36 +143,33 @@ class ProductProvider extends ChangeNotifier {
     try {
       final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
       
-      if (results.isEmpty) {
+      // Filter by 50% confidence
+      final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) >= 0.5).toList();
+
+      if (filteredResults.isEmpty) {
         _visualSearchResults = [];
       } else {
-        final result = await _apiService.fetchProducts(
-          page: 1,
-          limit: 100, 
-        );
-        
-        final allProducts = result['products'] as List<Product>;
-        
-        _visualSearchResults = results.map((res) {
-          final targetId = res['id'].toString();
-          final product = allProducts.firstWhere(
-            (p) => p.id == targetId,
-            orElse: () => Product(
-              id: targetId,
-              name: 'Unknown Product',
-              description: '',
-              price: 0,
-              imageUrl: '',
-              categories: [],
-              stockStatus: 'out_of_stock',
-              rating: 0,
-              ratingCount: 0,
-            ),
-          );
-          return VisualSearchResult(product: product, confidence: res['confidence']);
+        // Fetch all product details in parallel for maximum speed
+        final List<Future<VisualSearchResult?>> detailFutures = filteredResults.map((res) async {
+          try {
+            final productId = res['id'];
+            final productDetail = await _apiService.fetchProductDetail(productId);
+            if (productDetail != null) {
+              return VisualSearchResult(
+                product: productDetail.product,
+                confidence: res['confidence'] ?? 0.0,
+              );
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error fetching detail for ID ${res['id']}: $e');
+          }
+          return null;
         }).toList();
 
-        _visualSearchResults.removeWhere((e) => e.product.name == 'Unknown Product');
+        final List<VisualSearchResult?> fetchedResults = await Future.wait(detailFutures);
+        
+        // Remove nulls and update results
+        _visualSearchResults = fetchedResults.whereType<VisualSearchResult>().toList();
       }
     } catch (e) {
       _error = 'Visual Search Failed: $e';
