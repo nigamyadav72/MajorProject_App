@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../models/product_detail.dart';
 import '../models/category.dart';
 import '../services/api_service.dart';
 
@@ -142,43 +143,62 @@ class ProductProvider extends ChangeNotifier {
 
     try {
       final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
-      debugPrint('🔍 Raw AI Results: $results');
+      debugPrint('🔍 VISUAL SEARCH RAW RESULTS FROM SERVER: $results');
       
-      // Filter by 50% confidence (0.5)
-      final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) >= 0.5).toList();
-      debugPrint('🔍 Filtered Results (>= 0.5): ${filteredResults.length}');
+      // Temporary: low threshold (10%) to see if ANYTHING comes through
+      final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) >= 0.1).toList();
+      debugPrint('🔍 Results above 10% threshold: ${filteredResults.length}');
 
       if (filteredResults.isEmpty) {
-        debugPrint('⚠️ No results passed the 0.5 similarity threshold');
+        debugPrint('⚠️ NO RESULTS PASS THE 10% THRESHOLD');
         _visualSearchResults = [];
       } else {
-        // Fetch all product details in parallel
-        debugPrint('🔍 Fetching details for ${filteredResults.length} matching IDs...');
+        debugPrint('🔍 Searching for Products matching SKUs: ${filteredResults.map((e) => e['sku']).toList()}');
+        
         final List<Future<VisualSearchResult?>> detailFutures = filteredResults.map((res) async {
           try {
-            final productId = res['id'];
-            final productDetail = await _apiService.fetchProductDetail(productId);
+            final String sku = res['sku'];
+            
+            // 1. Try fetching by ID first (in case SKU == ID)
+            ProductDetail? productDetail;
+            if (int.tryParse(sku) != null) {
+              productDetail = await _apiService.fetchProductDetail(int.parse(sku));
+            }
+
+            // 2. If not found, search for product by SKU string
+            if (productDetail == null) {
+              debugPrint('🔍 SKU $sku not found by ID, searching via name/sku search...');
+              final searchResult = await _apiService.fetchProducts(page: 1, limit: 1, search: sku);
+              final List<Product> searchProducts = searchResult['products'];
+              
+              if (searchProducts.isNotEmpty) {
+                // Fetch the detail of the first match
+                productDetail = await _apiService.fetchProductDetail(int.parse(searchProducts.first.id));
+              }
+            }
+
             if (productDetail != null) {
-              debugPrint('✅ Found Product in DB: ${productDetail.product.name} (ID: $productId)');
+              debugPrint('✅ MATCH FOUND: ${productDetail.product.name} (SKU: $sku)');
               return VisualSearchResult(
                 product: productDetail.product,
                 confidence: res['confidence'] ?? 0.0,
               );
             } else {
-              debugPrint('❌ Product ID $productId NOT found in main Database');
+              debugPrint('❌ NO DB MATCH: Could not find product with SKU $sku');
             }
           } catch (e) {
-            debugPrint('⚠️ Error fetching detail for ID ${res['id']}: $e');
+            debugPrint('⚠️ Error matching SKU ${res['sku']}: $e');
           }
           return null;
         }).toList();
 
         final List<VisualSearchResult?> fetchedResults = await Future.wait(detailFutures);
         _visualSearchResults = fetchedResults.whereType<VisualSearchResult>().toList();
-        debugPrint('✅ Final Visual Search Count: ${_visualSearchResults.length}');
+        
+        debugPrint('🏁 FINAL RESULTS DISPLAYED: ${_visualSearchResults.length}');
       }
     } catch (e) {
-      debugPrint('❌ Visual Search Provider Error: $e');
+      debugPrint('🚨 PROVIDER CRITICAL ERROR: $e');
       _error = 'Visual Search Failed: $e';
     } finally {
       _isLoading = false;

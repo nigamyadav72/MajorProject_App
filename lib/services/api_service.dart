@@ -238,7 +238,7 @@ class ApiService {
       
       return resultsRaw.map((e) {
         return {
-          'id': int.parse(e['sku'].toString()), // 'sku' maps to product id
+          'sku': e['sku']?.toString() ?? '', // Return the raw SKU string
           'confidence': double.parse((e['similarity'] ?? 0.0).toString()),
         };
       }).toList();

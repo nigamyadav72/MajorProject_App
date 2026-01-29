@@ -87,7 +87,7 @@ class _ExplorePageState extends State<ExplorePage> {
               children: [
                 CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                 SizedBox(width: 20),
-                const Text("Analyzing image..."),
+                Text("Analyzing image..."),
               ],
             ),
             duration: Duration(seconds: 2),
