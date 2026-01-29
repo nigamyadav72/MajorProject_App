@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/category.dart';
@@ -120,6 +121,46 @@ class ProductProvider extends ChangeNotifier {
   void changeSearch(String search) {
     _searchQuery = search;
     fetchProducts(page: 1);
+  }
+
+  // -------------------- VISUAL SEARCH --------------------
+  Future<void> visualSearch(File imageFile) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      // 1. Get IDs from AI Model Server
+      final List<int> productIds = await _apiService.visualSearch(imageFile);
+      
+      if (productIds.isEmpty) {
+        _products = [];
+      } else {
+        // 2. Fetch full product details for these IDs
+        // Note: Backend might need a multi-ID filter. 
+        // For now, we'll simulate by fetching all and filtering locally or 
+        // if backend supports multiple 'id' params.
+        // Assuming backend supports: ?ids=1,2,5
+        
+        // Simulating result fetching:
+        final result = await _apiService.fetchProducts(
+          page: 1,
+          limit: productIds.length,
+          // We'll need to modify fetchProducts to support multiple IDs if needed
+        );
+        
+        // Filtering locally for the purpose of the demonstration 
+        // until backend has a dedicated multi-id endpoint
+        _products = (result['products'] as List<Product>)
+            .where((p) => productIds.contains(p.id))
+            .toList();
+      }
+    } catch (e) {
+      _error = 'Visual Search Failed: $e';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // -------------------- FETCH CATEGORIES --------------------

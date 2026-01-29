@@ -5,6 +5,8 @@ import 'widgets/product_card.dart';
 import 'providers/navigation_provider.dart';
 import 'widgets/category_card.dart';
 import 'providers/auth_provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final PageController _bannerController = PageController();
+  final TextEditingController _searchController = TextEditingController();
   int _currentBannerIndex = 0;
 
   final List<Map<String, dynamic>> _promoBanners = [
@@ -58,6 +61,12 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  @override
+  void dispose() {
+    _bannerController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -226,6 +235,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       child: TextField(
+        controller: _searchController,
         onSubmitted: (value) {
           if (value.isNotEmpty) {
             context.read<ProductProvider>().changeSearch(value);
@@ -233,23 +243,97 @@ class _HomePageState extends State<HomePage> {
           }
         },
         decoration: InputDecoration(
-          hintText: "Search for shoes, electronics...",
+          hintText: "Search for products...",
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           prefixIcon: const Icon(Icons.search, color: Color(0xFFFF6B6B)),
-          suffixIcon: Container(
-            margin: const EdgeInsets.all(8),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.tune, size: 18, color: Color(0xFFFF6B6B)),
+          suffixIcon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_searchController.text.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 20, color: Colors.grey),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                    });
+                  },
+                ),
+              IconButton(
+                icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFFFF6B6B)),
+                onPressed: _handleVisualSearch,
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         ),
+        onChanged: (text) => setState(() {}),
       ),
     );
+  }
+
+  Future<void> _handleVisualSearch() async {
+    final ImagePicker picker = ImagePicker();
+    
+    // Show option for Camera or Gallery
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Visual Search",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFFFF6B6B)),
+              title: const Text("Take a Photo"),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Color(0xFFFF6B6B)),
+              title: const Text("Choose from Gallery"),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source != null) {
+      final XFile? image = await picker.pickImage(source: source);
+      if (image != null) {
+        if (!mounted) return;
+        
+        // Show loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                SizedBox(width: 20),
+                Text("Analyzing image..."),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Perform visual search
+        await context.read<ProductProvider>().visualSearch(File(image.path));
+        
+        // Navigate to Explore tab (where products are shown)
+        if (!mounted) return;
+        context.read<NavigationProvider>().setIndex(1);
+      }
+    }
   }
 
   /// 🎯 Banner Carousel

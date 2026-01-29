@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -207,6 +208,41 @@ class ApiService {
   // ============================
   // ✅ CART API
   // ============================
+  // ============================
+  // ✅ VISUAL SEARCH (AI MODEL)
+  // ============================
+  Future<List<int>> visualSearch(File imageFile) async {
+    try {
+      final uri = Uri.parse('${AppConfig.modelServerUrl}/predict/');
+      debugPrint('🚀 Visual Search (AI Model): $uri');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+        ),
+      );
+
+      final streamedResponse = await request.send().timeout(timeoutDuration);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 200) {
+        throw Exception('Model server error (${response.statusCode}): ${response.body}');
+      }
+
+      // Expected response: {"product_ids": [1, 2, 5]} or similar
+      final decoded = json.decode(response.body);
+      
+      // Handle various response formats
+      final List<dynamic> idsRaw = decoded['product_ids'] ?? decoded['ids'] ?? [];
+      return idsRaw.map((e) => int.parse(e.toString())).toList();
+    } catch (e) {
+      debugPrint('❌ Visual Search Error: $e');
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> fetchCart() async {
     try {
       final uri = Uri.parse('$baseUrl/cart/');
