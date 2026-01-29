@@ -7,6 +7,7 @@ import 'widgets/category_card.dart';
 import 'providers/auth_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'screens/visual_search_results_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -329,9 +330,12 @@ class _HomePageState extends State<HomePage> {
         // Perform visual search
         await context.read<ProductProvider>().visualSearch(File(image.path));
         
-        // Navigate to Explore tab (where products are shown)
         if (!mounted) return;
-        context.read<NavigationProvider>().setIndex(1);
+        
+        // Navigate to dedicated results page
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const VisualSearchResultsPage()),
+        );
       }
     }
   }

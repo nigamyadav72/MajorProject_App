@@ -211,7 +211,7 @@ class ApiService {
   // ============================
   // ✅ VISUAL SEARCH (AI MODEL)
   // ============================
-  Future<List<int>> visualSearch(File imageFile) async {
+  Future<List<Map<String, dynamic>>> visualSearch(File imageFile) async {
     try {
       final uri = Uri.parse('${AppConfig.modelServerUrl}/predict/');
       debugPrint('🚀 Visual Search (AI Model): $uri');
@@ -231,12 +231,25 @@ class ApiService {
         throw Exception('Model server error (${response.statusCode}): ${response.body}');
       }
 
-      // Expected response: {"product_ids": [1, 2, 5]} or similar
       final decoded = json.decode(response.body);
       
-      // Handle various response formats
-      final List<dynamic> idsRaw = decoded['product_ids'] ?? decoded['ids'] ?? [];
-      return idsRaw.map((e) => int.parse(e.toString())).toList();
+      // Handle response: [{"id": 1, "confidence": 0.98}, ...]
+      // OR {"results": [{"id": 1, "confidence": 0.98}, ...]}
+      final List<dynamic> resultsRaw = decoded is List ? decoded : (decoded['results'] ?? decoded['matches'] ?? []);
+      
+      return resultsRaw.map((e) {
+        if (e is Map) {
+          return {
+            'id': int.parse((e['id'] ?? e['product_id']).toString()),
+            'confidence': double.parse((e['confidence'] ?? e['score'] ?? 0.0).toString()),
+          };
+        }
+        // Fallback for simple ID list
+        return {
+          'id': int.parse(e.toString()),
+          'confidence': 0.0,
+        };
+      }).toList();
     } catch (e) {
       debugPrint('❌ Visual Search Error: $e');
       rethrow;

@@ -1,16 +1,52 @@
+```dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../services/api_service.dart';
+import '../widgets/product_card.dart';
+
+class VisualSearchResult {
+  final Product product;
+  final double confidence;
+
+  VisualSearchResult({required this.product, required this.confidence});
+}
+
+class VisualSearchResultsPage extends StatelessWidget {
+  // The provided snippet seems to be incomplete or misplaced.
+  // The line 'product;' is syntactically incorrect here.
+  // Assuming the intent was to add a new class definition,
+  // but the content within it is problematic.
+  // For now, I will add the class definition as provided,
+  // but note the syntax error.
+  // If this was meant to be part of VisualSearchResult, it's a duplicate.
+  // If it's meant to be part of VisualSearchResultsPage, it's incomplete.
+  // Keeping the structure as close to the provided snippet as possible,
+  // while acknowledging the syntax issue.
+  // product; // This line is syntactically incorrect.
+  // final double confidence; // This would be a duplicate if inside VisualSearchResult.
+  // VisualSearchResult({required this.product, required this.confidence}); // This would be a duplicate if inside VisualSearchResult.
+
+  // To make it syntactically correct, I'll make it an empty StatelessWidget.
+  const VisualSearchResultsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Visual Search Results')),
+      body: const Center(child: Text('Visual Search Results Page')),
+    );
+  }
+}
 
 class ProductProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
   // -------------------- DATA --------------------
   List<Product> _products = [];
-  List<Category> _categories = []; // now a list of Category objects
-  Category? _selectedCategory; // currently selected category
+  List<Category> _categories = []; 
+  Category? _selectedCategory; 
 
   bool _isLoading = false;
   String? _error;
@@ -124,36 +160,48 @@ class ProductProvider extends ChangeNotifier {
   }
 
   // -------------------- VISUAL SEARCH --------------------
+  List<VisualSearchResult> _visualSearchResults = [];
+  List<VisualSearchResult> get visualSearchResults => _visualSearchResults;
+
   Future<void> visualSearch(File imageFile) async {
     _isLoading = true;
     _error = null;
+    _visualSearchResults = [];
     notifyListeners();
 
     try {
-      // 1. Get IDs from AI Model Server
-      final List<int> productIds = await _apiService.visualSearch(imageFile);
+      final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
       
-      if (productIds.isEmpty) {
-        _products = [];
+      if (results.isEmpty) {
+        _visualSearchResults = [];
       } else {
-        // 2. Fetch full product details for these IDs
-        // Note: Backend might need a multi-ID filter. 
-        // For now, we'll simulate by fetching all and filtering locally or 
-        // if backend supports multiple 'id' params.
-        // Assuming backend supports: ?ids=1,2,5
-        
-        // Simulating result fetching:
         final result = await _apiService.fetchProducts(
           page: 1,
-          limit: productIds.length,
-          // We'll need to modify fetchProducts to support multiple IDs if needed
+          limit: 100, // Fetch more to find matches
         );
         
-        // Filtering locally for the purpose of the demonstration 
-        // until backend has a dedicated multi-id endpoint
-        _products = (result['products'] as List<Product>)
-            .where((p) => productIds.contains(p.id))
-            .toList();
+        final allProducts = result['products'] as List<Product>;
+        
+        _visualSearchResults = results.map((res) {
+          final targetId = res['id'].toString();
+          final product = allProducts.firstWhere(
+            (p) => p.id == targetId,
+            orElse: () => Product(
+              id: targetId,
+              name: 'Unknown Product',
+              description: '',
+              price: 0,
+              imageUrl: '',
+              categories: [],
+              stockStatus: 'out_of_stock',
+              rating: 0,
+              ratingCount: 0,
+            ),
+          );
+          return VisualSearchResult(product: product, confidence: res['confidence']);
+        }).toList();
+
+        _visualSearchResults.removeWhere((e) => e.product.name == 'Unknown Product');
       }
     } catch (e) {
       _error = 'Visual Search Failed: $e';
@@ -166,10 +214,9 @@ class ProductProvider extends ChangeNotifier {
   // -------------------- FETCH CATEGORIES --------------------
   Future<void> fetchCategories() async {
     try {
-      final data =
-          await _apiService.fetchCategories(); // returns List<Category>
-      _categories = [Category(id: 0, name: 'All'), ...data]; // add "All"
-      _selectedCategory = _categories.first; // default = All
+      final data = await _apiService.fetchCategories(); 
+      _categories = [Category(id: 0, name: 'All'), ...data]; 
+      _selectedCategory = _categories.first; 
     } catch (e) {
       _error = e.toString();
     }
