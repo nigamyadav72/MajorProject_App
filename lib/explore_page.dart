@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
+import 'screens/visual_search_results_page.dart';
 
 
 class ExplorePage extends StatefulWidget {
@@ -35,15 +36,73 @@ class _ExplorePageState extends State<ExplorePage> {
     super.dispose();
   }
 
-  Future<void> _pickImageFromCamera() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+  Future<void> _handleVisualSearch() async {
+    final ImagePicker picker = ImagePicker();
 
-    if (!mounted) return;
-    if (pickedFile != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Visual search coming soon 🚀')),
+    // Show option for Camera or Gallery
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Visual Search",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFFFF6B6B)),
+              title: const Text("Take a Photo"),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Color(0xFFFF6B6B)),
+              title: const Text("Choose from Gallery"),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source != null) {
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
       );
+      if (image != null) {
+        if (!mounted) return;
+
+        // Show loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                SizedBox(width: 20),
+                const Text("Analyzing image..."),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Perform visual search
+        await context.read<ProductProvider>().visualSearch(File(image.path));
+
+        // Navigate to dedicated results page
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const VisualSearchResultsPage()),
+        );
+      }
     }
   }
 
@@ -202,7 +261,7 @@ class _ExplorePageState extends State<ExplorePage> {
               prefixIcon: const Icon(Icons.search, color: Color(0xFFFF6B6B)),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.camera_alt_outlined, color: Colors.grey, size: 20),
-                onPressed: _pickImageFromCamera,
+                onPressed: _handleVisualSearch,
               ),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
