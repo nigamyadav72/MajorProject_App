@@ -213,13 +213,13 @@ class ApiService {
   // ============================
   Future<List<Map<String, dynamic>>> visualSearch(File imageFile) async {
     try {
-      final uri = Uri.parse('${AppConfig.modelServerUrl}/predict/');
+      final uri = Uri.parse('${AppConfig.modelServerUrl}/search-image/');
       debugPrint('🚀 Visual Search (AI Model): $uri');
 
       final request = http.MultipartRequest('POST', uri);
       request.files.add(
         await http.MultipartFile.fromPath(
-          'image',
+          'file', // Updated from 'image' to 'file'
           imageFile.path,
         ),
       );
@@ -233,21 +233,13 @@ class ApiService {
 
       final decoded = json.decode(response.body);
       
-      // Handle response: [{"id": 1, "confidence": 0.98}, ...]
-      // OR {"results": [{"id": 1, "confidence": 0.98}, ...]}
-      final List<dynamic> resultsRaw = decoded is List ? decoded : (decoded['results'] ?? decoded['matches'] ?? []);
+      // Handle response: {"results": [{"sku": "123", "similarity": 0.98}, ...]}
+      final List<dynamic> resultsRaw = decoded['results'] ?? [];
       
       return resultsRaw.map((e) {
-        if (e is Map) {
-          return {
-            'id': int.parse((e['id'] ?? e['product_id']).toString()),
-            'confidence': double.parse((e['confidence'] ?? e['score'] ?? 0.0).toString()),
-          };
-        }
-        // Fallback for simple ID list
         return {
-          'id': int.parse(e.toString()),
-          'confidence': 0.0,
+          'id': int.parse(e['sku'].toString()), // 'sku' maps to product id
+          'confidence': double.parse((e['similarity'] ?? 0.0).toString()),
         };
       }).toList();
     } catch (e) {
