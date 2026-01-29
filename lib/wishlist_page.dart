@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'models/cart_item.dart';
+
 import 'product_details_page.dart';
 import 'providers/cart_provider.dart';
 import 'providers/wishlist_provider.dart';
@@ -18,12 +18,23 @@ class WishlistPage extends StatelessWidget {
       ),
       body: Consumer<WishlistProvider>(
         builder: (context, wishlist, _) {
+          if (wishlist.isLoading && wishlist.items.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
           if (wishlist.items.isEmpty) {
-            return const Center(
-              child: Text('Your wishlist is empty!'),
+            return RefreshIndicator(
+              onRefresh: wishlist.fetchWishlist,
+              child: Stack(
+                children: [
+                  const Center(child: Text('Your wishlist is empty!')),
+                  ListView(physics: const AlwaysScrollableScrollPhysics()),
+                ],
+              ),
             );
           }
-          return ListView.builder(
+          return RefreshIndicator(
+            onRefresh: wishlist.fetchWishlist,
+            child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: wishlist.items.length,
             itemBuilder: (context, index) {
@@ -60,21 +71,16 @@ class WishlistPage extends StatelessWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.add_shopping_cart),
-                        onPressed: () {
-                          context.read<CartProvider>().addToCart(CartItem(
-                                id: product.id,
-                                name: product.name,
-                                price: product.price,
-                                quantity: 1,
-                                imageUrl: product.imageUrl.isNotEmpty
-                                    ? product.imageUrl
-                                    : null,
-                              ));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${product.name} added to cart'),
-                            ),
-                          );
+                        onPressed: () async {
+                          final cart = context.read<CartProvider>();
+                          await cart.addToCart(int.parse(product.id));
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${product.name} added to cart'),
+                              ),
+                            );
+                          }
                         },
                       ),
                       IconButton(
@@ -87,7 +93,8 @@ class WishlistPage extends StatelessWidget {
                 ),
               );
             },
-          );
+          ),
+        );
         },
       ),
     );

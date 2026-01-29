@@ -31,8 +31,11 @@ class AuthService {
       }
 
       // Django CustomGoogleLogin expects "access_token" (used as id_token).
+      final uri = Uri.parse(_googleAuthUrl);
+      debugPrint('🚀 Google Auth POST: $uri');
+      
       final response = await http.post(
-        Uri.parse(_googleAuthUrl),
+        uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'access_token': idToken}),
       );
@@ -57,9 +60,16 @@ class AuthService {
         },
       };
     } catch (e) {
-      // ignore: avoid_print
-      print('Google Sign-In Error: $e');
-      return {'success': false, 'error': e.toString()};
+      debugPrint('Google Sign-In Exception: $e');
+      String errorMessage = e.toString();
+      if (e.toString().contains('ApiException: 10')) {
+        errorMessage = 'Google Developer Error (10): Check SHA-1 and Client ID.';
+      } else if (e.toString().contains('ApiException: 12500')) {
+        errorMessage = 'Sign-in failed (12500): Check Google Play Services or configuration.';
+      } else if (e.toString().contains('ApiException: 7')) {
+        errorMessage = 'Network Error (7): Ensure your device has internet access.';
+      }
+      return {'success': false, 'error': errorMessage};
     }
   }
 
@@ -76,8 +86,11 @@ class AuthService {
   /// Login with email and password
   Future<Map<String, dynamic>> loginWithEmail(String email, String password) async {
     try {
+      final uri = Uri.parse('${AppConfig.backendBaseUrl}/api/auth/login/');
+      debugPrint('🚀 Login POST: $uri');
+
       final response = await http.post(
-        Uri.parse('${AppConfig.backendBaseUrl}/api/auth/login/'),
+        uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -114,8 +127,11 @@ class AuthService {
     String? recaptchaToken,
   }) async {
     try {
+      final uri = Uri.parse('${AppConfig.backendBaseUrl}/api/auth/register/');
+      debugPrint('🚀 Register POST: $uri');
+
       final response = await http.post(
-        Uri.parse('${AppConfig.backendBaseUrl}/api/auth/register/'),
+        uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -162,6 +178,28 @@ class AuthService {
     } catch (e) {
       debugPrint('Error fetching user profile: $e');
       return null;
+    }
+  }
+
+  /// Test connection to backend
+  Future<Map<String, dynamic>> testConnection() async {
+    const url = '${AppConfig.backendBaseUrl}/api/categories/';
+    try {
+      debugPrint('🛠️ Testing connection to: $url');
+      final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+      return {
+        'success': response.statusCode == 200,
+        'status': response.statusCode,
+        'url': url,
+        'message': 'Successfully reached server!',
+      };
+    } catch (e) {
+      debugPrint('❌ Connection test failed: $e');
+      return {
+        'success': false,
+        'url': url,
+        'message': e.toString(),
+      };
     }
   }
 }

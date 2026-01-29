@@ -8,6 +8,7 @@ class AppConfig {
   /// - Android emulator: `http://10.0.2.2:8000`
   /// - Real Android device (USB): `http://<your Mac LAN IP>:8000` (see ANDROID_GOOGLE_SIGNIN.md)
   static const String backendBaseUrl = 'http://192.168.10.67:8000';
+  static const String modelServerUrl = 'http://192.168.10.67:8001';
 
   /// Google OAuth **Web** Client ID — must match Django SocialApp (Google).
   /// Used as serverClientId for backend verification (Android & iOS).

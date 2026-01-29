@@ -45,6 +45,70 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  Future<void> _showConnectionDiagnostics() async {
+    final auth = context.read<AuthProvider>();
+    
+    // Show a loading dialog immediately
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await auth.testConnection();
+    
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading dialog
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              result['success'] ? Icons.check_circle : Icons.error,
+              color: result['success'] ? Colors.green : Colors.red,
+            ),
+            const SizedBox(width: 10),
+            const Text("Server Diagnostic"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Target URL:", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text("${result['url']}", style: const TextStyle(fontSize: 12, color: Colors.blue)),
+            const SizedBox(height: 12),
+            const Text("Result:", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(result['success'] ? "Connection Success!" : "Connection Failed"),
+            if (result['status'] != null) Text("HTTP Status: ${result['status']}"),
+            const SizedBox(height: 12),
+            const Text("Details:", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text("${result['message']}", style: const TextStyle(fontSize: 12)),
+            if (!result['success']) ...[
+              const Divider(height: 24),
+              const Text(
+                "💡 Troubleshooting tips:\n"
+                "1. Confirm Mac IP is correct in AppConfig\n"
+                "2. Run: python manage.py runserver 0.0.0.0:8000\n"
+                "3. Mac and Phone must be on same WiFi\n"
+                "4. Check Mac Firewall settings",
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+            ]
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -168,16 +232,28 @@ class _LoginPageState extends State<LoginPage> {
 
                             Align(
                               alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const PrivacySecurityPage(),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  TextButton(
+                                    onPressed: _showConnectionDiagnostics,
+                                    child: const Text(
+                                      "Connection Help?",
+                                      style: TextStyle(fontSize: 12, color: Colors.blue),
                                     ),
-                                  );
-                                },
-                                child: const Text("Forgot Password?"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const PrivacySecurityPage(),
+                                        ),
+                                      );
+                                    },
+                                    child: const Text("Forgot Password?"),
+                                  ),
+                                ],
                               ),
                             ),
 
@@ -236,14 +312,14 @@ class _LoginPageState extends State<LoginPage> {
                                 onPressed: auth.isGoogleLoading
                                     ? null
                                     : () async {
-                                        await auth.loginWithGoogle();
+                                        final result = await auth.loginWithGoogle();
                                         if (!context.mounted) return;
-                                        if (!auth.isAuthenticated) {
+                                        if (result['success'] != true) {
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
-                                            const SnackBar(
+                                            SnackBar(
                                               content: Text(
-                                                'Sign-in failed. Please try again.',
+                                                result['error'] ?? 'Sign-in failed. Please try again.',
                                               ),
                                             ),
                                           );

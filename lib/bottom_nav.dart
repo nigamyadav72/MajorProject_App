@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:majorproject_app/home_screen.dart';
 import 'explore_page.dart';
 import 'cart_page.dart';
 import 'wishlist_page.dart';
 import 'profile_page.dart';
+import 'providers/navigation_provider.dart';
+import 'providers/cart_provider.dart';
+import 'providers/wishlist_provider.dart';
 
 class BottomNav extends StatefulWidget {
   const BottomNav({super.key});
@@ -13,7 +17,16 @@ class BottomNav extends StatefulWidget {
 }
 
 class _BottomNavState extends State<BottomNav> {
-  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 🔄 Initial fetch for Cart and Wishlist
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CartProvider>().fetchCart();
+      context.read<WishlistProvider>().fetchWishlist();
+    });
+  }
 
   final List<Widget> _pages = const [
     HomePage(),
@@ -25,17 +38,18 @@ class _BottomNavState extends State<BottomNav> {
 
   @override
   Widget build(BuildContext context) {
+    final navigationProvider = context.watch<NavigationProvider>();
+    final currentIndex = navigationProvider.selectedIndex;
+
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: _pages[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          navigationProvider.setIndex(index);
         },
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: const Color(0xFFFF6B6B),
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         items: const [

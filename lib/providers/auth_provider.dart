@@ -5,12 +5,14 @@ class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
   bool _isAuthenticated = false;
+  bool _isInitialized = false;
   bool _isGoogleLoading = false;
   bool _isEmailLoading = false;
   bool _isSignupLoading = false;
   User? _user;
 
   bool get isAuthenticated => _isAuthenticated;
+  bool get isInitialized => _isInitialized;
   bool get isGoogleLoading => _isGoogleLoading;
   bool get isEmailLoading => _isEmailLoading;
   bool get isSignupLoading => _isSignupLoading;
@@ -19,15 +21,31 @@ class AuthProvider extends ChangeNotifier {
 
   // 🔎 Check token on app start and load user
   Future<void> checkAuth() async {
-    _isAuthenticated = await _authService.isLoggedIn();
-    if (_isAuthenticated) {
-      await _loadUserProfile();
-    }
+    _isInitialized = false;
     notifyListeners();
+
+    try {
+      final loggedIn = await _authService.isLoggedIn();
+      if (loggedIn) {
+        // Strictly verify by loading profile
+        await _loadUserProfile();
+        _isAuthenticated = _user != null;
+      } else {
+        _isAuthenticated = false;
+        _user = null;
+      }
+    } catch (e) {
+      debugPrint('Auth check error: $e');
+      _isAuthenticated = false;
+      _user = null;
+    } finally {
+      _isInitialized = true;
+      notifyListeners();
+    }
   }
 
   // 🔐 Google Login
-  Future<void> loginWithGoogle() async {
+  Future<Map<String, dynamic>> loginWithGoogle() async {
     _isGoogleLoading = true;
     notifyListeners();
 
@@ -44,6 +62,7 @@ class AuthProvider extends ChangeNotifier {
 
     _isGoogleLoading = false;
     notifyListeners();
+    return result;
   }
 
   // 🔓 Logout
@@ -102,6 +121,11 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(profile);
       notifyListeners();
     }
+  }
+
+  // 🛠️ Test Connection Diagnostic
+  Future<Map<String, dynamic>> testConnection() async {
+    return await _authService.testConnection();
   }
 }
 

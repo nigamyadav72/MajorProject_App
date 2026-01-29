@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../config/app_config.dart';
 import '../models/product.dart';
@@ -32,6 +33,7 @@ class ApiService {
           if (search.isNotEmpty) 'search': search,
         },
       );
+      debugPrint('🌐 Fetching Products from: $uri');
 
       final response = await _client.get(uri).timeout(timeoutDuration);
 
@@ -64,9 +66,10 @@ class ApiService {
   // ============================
   // ✅ FETCH PRODUCT BY ID (DETAIL)
   // ============================
-  Future<ProductDetail?> fetchProductById(String id) async {
+  Future<ProductDetail?> fetchProductDetail(int id) async {
     try {
       final uri = Uri.parse('$baseUrl/products/$id/');
+      debugPrint('🚀 Fetch Product Detail: $uri');
       final response = await _client.get(uri).timeout(timeoutDuration);
       if (response.statusCode != 200) return null;
       final decoded = json.decode(response.body) as Map<String, dynamic>;
@@ -84,6 +87,7 @@ class ApiService {
   Future<List<Category>> fetchCategories() async {
     try {
       final uri = Uri.parse('$baseUrl/categories/');
+      debugPrint('🚀 Fetch Categories: $uri');
 
       final response = await _client.get(uri).timeout(timeoutDuration);
 
@@ -116,6 +120,7 @@ class ApiService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/payment/khalti/initiate/');
+      debugPrint('🚀 Initiate Khalti Payment: $uri');
       
       // Amount in backend expects Paisa (usually) or the backend code converts it. 
       // Looking at the user's Node code: `amount: body.amount`.
@@ -165,6 +170,7 @@ class ApiService {
   Future<void> requestPasswordReset(String email) async {
     try {
       const url = '${AppConfig.backendBaseUrl}/api/auth/password/reset/';
+      debugPrint('🚀 Request Password Reset: $url');
       
       final response = await _client.post(
         Uri.parse(url),
@@ -182,6 +188,168 @@ class ApiService {
       throw Exception(errorMsg);
     } catch (e) {
       debugPrint('❌ Failed password reset: $e');
+      rethrow;
+    }
+  }
+
+  // ============================
+  // ✅ AUTH HEADERS
+  // ============================
+  Future<Map<String, String>> _getAuthHeaders() async {
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: 'access');
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ============================
+  // ✅ CART API
+  // ============================
+  Future<Map<String, dynamic>> fetchCart() async {
+    try {
+      final uri = Uri.parse('$baseUrl/cart/');
+      debugPrint('🚀 Fetch Cart: $uri');
+      final response = await _client.get(
+        uri,
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch cart: ${response.statusCode}');
+      }
+      return json.decode(response.body);
+    } catch (e) {
+      debugPrint('Error fetching cart: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> addToCart(int productId, int quantity) async {
+    try {
+      final uri = Uri.parse('$baseUrl/cart/add/');
+      debugPrint('🚀 Add to Cart POST: $uri');
+      final response = await _client.post(
+        uri,
+        headers: await _getAuthHeaders(),
+        body: json.encode({
+          'product': productId,
+          'quantity': quantity,
+        }),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to add to cart: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error adding to cart: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateCartItem(int itemId, int quantity) async {
+    try {
+      final url = '$baseUrl/cart/item/$itemId/update/';
+      debugPrint('🚀 Update Cart Item PATCH: $url');
+      final response = await _client.patch(
+        Uri.parse(url),
+        headers: await _getAuthHeaders(),
+        body: json.encode({'quantity': quantity}),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update cart item: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error updating cart: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeCartItem(int itemId) async {
+    try {
+      final url = '$baseUrl/cart/item/$itemId/remove/';
+      debugPrint('🚀 Remove Cart Item DELETE: $url');
+      final response = await _client.delete(
+        Uri.parse(url),
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to remove cart item: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error removing from cart: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> clearCart() async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/cart/clear/'),
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to clear cart: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error clearing cart: $e');
+      rethrow;
+    }
+  }
+
+  // ============================
+  // ✅ WISHLIST API
+  // ============================
+  Future<List<dynamic>> fetchWishlist() async {
+    try {
+      final response = await _client.get(
+        Uri.parse('$baseUrl/wishlist/'),
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch wishlist');
+      }
+      return json.decode(response.body);
+    } catch (e) {
+      debugPrint('Error fetching wishlist: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> addToWishlist(int productId) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('$baseUrl/wishlist/add/'),
+        headers: await _getAuthHeaders(),
+        body: json.encode({'product': productId}),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to add to wishlist');
+      }
+    } catch (e) {
+      debugPrint('Error adding to wishlist: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeFromWishlist(int productId) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('$baseUrl/wishlist/remove/$productId/'),
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to remove from wishlist');
+      }
+    } catch (e) {
+      debugPrint('Error removing from wishlist: $e');
       rethrow;
     }
   }

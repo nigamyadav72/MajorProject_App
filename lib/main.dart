@@ -6,6 +6,7 @@ import 'bottom_nav.dart';
 import 'providers/cart_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/navigation_provider.dart';
 import 'providers/auth_provider.dart';
 
 void main() {
@@ -23,9 +24,37 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
+          if (!auth.isInitialized) {
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              home: Scaffold(
+                body: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.shopping_bag_outlined,
+                            size: 80, color: Colors.white),
+                        SizedBox(height: 24),
+                        CircularProgressIndicator(color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'E-Pasal',

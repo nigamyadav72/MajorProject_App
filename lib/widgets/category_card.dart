@@ -16,44 +16,52 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.orange.shade100 : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border:
-              isSelected ? Border.all(color: Colors.orange, width: 2) : null,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha((0.1 * 255).round()),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            height: 64,
+            width: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: isSelected
+                  ? const LinearGradient(
+                      colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : LinearGradient(
+                      colors: [Colors.grey.shade100, Colors.grey.shade100],
+                    ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
+            child: Icon(
               icon,
-              size: 32,
-              color: isSelected ? Colors.orange : Colors.black,
+              size: 28,
+              color: isSelected ? Colors.white : Colors.grey.shade700,
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.orange : Colors.black,
-              ),
-              textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? Colors.black87 : Colors.grey.shade600,
             ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

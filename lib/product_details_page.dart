@@ -7,7 +7,7 @@ import 'package:majorproject_app/services/khalti_helper.dart';
 
 import 'models/product.dart';
 import 'models/product_detail.dart';
-import 'models/cart_item.dart';
+
 import 'providers/cart_provider.dart';
 import 'providers/wishlist_provider.dart';
 import 'services/api_service.dart';
@@ -104,7 +104,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       _loading = true;
       _error = null;
     });
-    final d = await _api.fetchProductById(widget.productId);
+    final d = await _api.fetchProductDetail(int.parse(widget.productId));
     if (!mounted) return;
     setState(() {
       _detail = d;
@@ -684,16 +684,10 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  void _addToCart() {
+  Future<void> _addToCart() async {
     final p = _product;
     final cart = context.read<CartProvider>();
-    cart.addToCart(CartItem(
-      id: p.id,
-      name: p.name,
-      price: p.price,
-      quantity: _quantity,
-      imageUrl: _imageUrls.isNotEmpty ? _imageUrls.first : null,
-    ));
+    await cart.addToCart(int.parse(p.id), quantity: _quantity);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${p.name} added to cart')),
