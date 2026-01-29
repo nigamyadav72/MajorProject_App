@@ -309,7 +309,12 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (source != null) {
-      final XFile? image = await picker.pickImage(source: source);
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
       if (image != null) {
         if (!mounted) return;
         
