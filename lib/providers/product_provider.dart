@@ -193,9 +193,23 @@ class ProductProvider extends ChangeNotifier {
         }).toList();
 
         final List<VisualSearchResult?> fetchedResults = await Future.wait(detailFutures);
-        _visualSearchResults = fetchedResults.whereType<VisualSearchResult>().toList();
+        final List<VisualSearchResult> allMatches = fetchedResults.whereType<VisualSearchResult>().toList();
+
+        // Deduplicate by Product ID (keep highest confidence)
+        final Map<String, VisualSearchResult> uniqueResults = {};
+        for (var match in allMatches) {
+          final id = match.product.id;
+          if (!uniqueResults.containsKey(id) || match.confidence > uniqueResults[id]!.confidence) {
+            uniqueResults[id] = match;
+          }
+        }
+
+        _visualSearchResults = uniqueResults.values.toList();
         
-        debugPrint('🏁 FINAL RESULTS DISPLAYED: ${_visualSearchResults.length}');
+        // Sort by confidence descending
+        _visualSearchResults.sort((a, b) => b.confidence.compareTo(a.confidence));
+        
+        debugPrint('🏁 FINAL DEDUPLICATED RESULTS DISPLAYED: ${_visualSearchResults.length}');
       }
     } catch (e) {
       debugPrint('🚨 PROVIDER CRITICAL ERROR: $e');
