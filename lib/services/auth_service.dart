@@ -99,8 +99,23 @@ class AuthService {
       );
 
       if (response.statusCode != 200) {
+        debugPrint("❌ Login Error Body: ${response.body}"); // ADDED THIS
         final body = jsonDecode(response.body);
-        throw Exception(body['detail'] ?? 'Login failed');
+        String errorMsg = 'Login failed';
+        
+        if (body['non_field_errors'] != null) {
+          errorMsg = (body['non_field_errors'] as List).first.toString();
+        } else if (body['detail'] != null) {
+          errorMsg = body['detail'];
+        } else if (body['error'] != null) {
+          errorMsg = body['error'];
+        } else if (body['email'] != null) {
+          errorMsg = "Email: ${(body['email'] as List).first}";
+        } else if (body['password'] != null) {
+          errorMsg = "Password: ${(body['password'] as List).first}";
+        }
+        
+        throw Exception(errorMsg);
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -121,9 +136,9 @@ class AuthService {
 
   /// Sign up with email and password
   Future<Map<String, dynamic>> signUpWithEmail({
+    required String username,
     required String email,
     required String password,
-    required String name,
     String? recaptchaToken,
   }) async {
     try {
@@ -134,23 +149,43 @@ class AuthService {
         uri,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'username': username,
           'email': email,
           'password': password,
-          'username': email.split('@')[0], // Backend Serializer expects username
-          'recaptcha_token': recaptchaToken ?? '', // Required by backend View
+          'recaptcha_token': recaptchaToken ?? '', 
         }),
       );
 
+      debugPrint('📥 Registration response status: ${response.statusCode}');
+      debugPrint('📥 Registration response body: ${response.body}');
+
       if (response.statusCode != 201 && response.statusCode != 200) {
         final body = jsonDecode(response.body);
-        throw Exception(body['error'] ?? body['detail'] ?? body['email'] ?? 'Registration failed');
+        
+        // Parse error messages
+        String errorMsg = 'Registration failed';
+        
+        if (body['username'] != null) {
+          errorMsg = 'Username: ${(body['username'] is List) ? body['username'][0] : body['username']}';
+        } else if (body['email'] != null) {
+          errorMsg = 'Email: ${(body['email'] is List) ? body['email'][0] : body['email']}';
+        } else if (body['password'] != null) {
+          errorMsg = 'Password: ${(body['password'] is List) ? body['password'][0] : body['password']}';
+        } else if (body['error'] != null) {
+          errorMsg = body['error'];
+        } else if (body['detail'] != null) {
+          errorMsg = body['detail'];
+        }
+        
+        throw Exception(errorMsg);
       }
 
       return {'success': true};
     } catch (e) {
+      debugPrint('❌ Registration error: $e');
       return {
         'success': false,
-        'error': e.toString(),
+        'error': e.toString().replaceAll('Exception: ', ''),
       };
     }
   }

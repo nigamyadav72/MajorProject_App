@@ -12,7 +12,7 @@ class SignUpPage extends StatefulWidget {
 
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -22,7 +22,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -41,9 +41,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
     final auth = context.read<AuthProvider>();
     final result = await auth.signUpWithEmail(
+      username: _usernameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text,
-      name: _nameController.text.trim(),
       recaptchaToken: _captchaToken,
     );
 
@@ -101,16 +101,24 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
-                              controller: _nameController,
+                              controller: _usernameController,
                               decoration: InputDecoration(
                                 prefixIcon: const Icon(Icons.person_outline),
-                                labelText: "Full Name",
+                                labelText: "Username",
+                                hintText: "e.g., John Doe or john_doe",
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              validator: (val) =>
-                                  val!.isEmpty ? 'Enter your name' : null,
+                              validator: (val) {
+                                if (val == null || val.trim().isEmpty) {
+                                  return 'Enter username';
+                                }
+                                if (val.length > 150) {
+                                  return 'Username is too long (max 150 characters)';
+                                }
+                                return null;
+                              },
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
@@ -175,7 +183,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
                             // Visible reCAPTCHA v2 Checkbox
                             RecaptchaV2Widget(
-                              siteKey: "6LfHFYUrAAAAACVr6Xq3VHKv4VJlaYSJgQ9uWCQE", // REAL SITE KEY FROM WEB
+                              siteKey: "6LfHFYUrAAAAACVr6Xq3VHKv4VJlaYSJgQ9uWCQE", 
                               onVerified: (token) {
                                 debugPrint("✅ Verified! Token captured.");
                                 setState(() {

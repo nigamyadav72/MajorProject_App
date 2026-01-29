@@ -24,7 +24,7 @@ class ProfilePage extends StatelessWidget {
         slivers: [
           // Gradient AppBar with User Info
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 240,
             pinned: true,
             backgroundColor: Colors.transparent,
             flexibleSpace: FlexibleSpaceBar(
@@ -40,9 +40,11 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                       const SizedBox(height: 20),
                       // Profile Avatar
                       Container(
@@ -52,7 +54,7 @@ class ProfilePage extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 3),
                         ),
                         child: CircleAvatar(
-                          radius: 45,
+                          radius: 40,
                           backgroundColor: Colors.white,
                           backgroundImage: user?.photoUrl != null
                               ? NetworkImage(user!.photoUrl!)
@@ -60,7 +62,7 @@ class ProfilePage extends StatelessWidget {
                           child: user?.photoUrl == null
                               ? const Icon(
                                   Icons.person,
-                                  size: 50,
+                                  size: 40,
                                   color: Color(0xFFFF6B6B),
                                 )
                               : null,
@@ -70,6 +72,9 @@ class ProfilePage extends StatelessWidget {
                       // User Name
                       Text(
                         user?.name ?? 'Guest User',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -77,9 +82,31 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
+                      // Username
+                      if (user?.username != null && 
+                          user!.username.isNotEmpty && 
+                          user.username.toLowerCase() != user.name.toLowerCase())
+                        Text(
+                          '@${user.username}',
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      if (user?.username != null && 
+                          user!.username.isNotEmpty && 
+                          user.username.toLowerCase() != user.name.toLowerCase())
+                        const SizedBox(height: 4),
                       // Email
                       Text(
                         user?.email ?? 'guest@example.com',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.9),
@@ -91,6 +118,7 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
           ),
+        ),
 
           // Content
           SliverToBoxAdapter(

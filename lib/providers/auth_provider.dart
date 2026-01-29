@@ -96,18 +96,18 @@ class AuthProvider extends ChangeNotifier {
 
   // ✍️ Email/Password Signup
   Future<Map<String, dynamic>> signUpWithEmail({
+    required String username,
     required String email,
     required String password,
-    required String name,
     String? recaptchaToken,
   }) async {
     _isSignupLoading = true;
     notifyListeners();
 
     final result = await _authService.signUpWithEmail(
+      username: username,
       email: email,
       password: password,
-      name: name,
       recaptchaToken: recaptchaToken,
     );
 
@@ -133,11 +133,13 @@ class AuthProvider extends ChangeNotifier {
 
 class User {
   final String name;
+  final String username;
   final String email;
   final String? photoUrl;
 
   User({
     required this.name,
+    required this.username,
     required this.email,
     this.photoUrl,
   });
@@ -155,13 +157,22 @@ class User {
       name = json['name']?.toString() ?? '';
     }
 
-    // Ultimate fallback to username
+    // Get username
+    final username = json['username']?.toString() ?? '';
+
+    // If name is still empty, use username as name
+    if (name.isEmpty && username.isNotEmpty) {
+      name = username;
+    }
+
+    // Final fallback
     if (name.isEmpty) {
-      name = json['username']?.toString() ?? 'User';
+      name = 'User';
     }
 
     return User(
       name: name,
+      username: username,
       email: json['email'] ?? '',
       photoUrl: json['picture'] ?? json['photo_url'],
     );
