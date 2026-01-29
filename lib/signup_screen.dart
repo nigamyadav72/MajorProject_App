@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'package:g_recaptcha_v3/g_recaptcha_v3.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -18,6 +19,26 @@ class _SignUpPageState extends State<SignUpPage> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
+ 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize reCAPTCHA v3 with the Site Key
+    // Note: This matches the user's reCAPTCHA v3 setup
+    // We use a placeholder key here which the user should replace
+    _initRecaptcha();
+  }
+
+  Future<void> _initRecaptcha() async {
+    try {
+      // The user needs to provide their Site Key here
+      // For now, I'm using a placeholder that they can easily spot
+      await GRecaptchaV3.ready("6LdyM7sqAAAAAPpSg7G7_v1Tf-N-w6xVQzY-PLACEHOLDER"); 
+      debugPrint("✅ reCAPTCHA v3 Ready");
+    } catch (e) {
+      debugPrint("❌ reCAPTCHA Initialization failed: $e");
+    }
+  }
 
   @override
   void dispose() {
@@ -32,10 +53,23 @@ class _SignUpPageState extends State<SignUpPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
+
+    // 1. Get reCAPTCHA Token
+    String? recaptchaToken;
+    try {
+       // 'signup' is the action name, it should match what you expect on backend if checked
+       recaptchaToken = await GRecaptchaV3.execute('signup');
+       debugPrint("🎟️ reCAPTCHA Token generated: ${recaptchaToken?.substring(0, 20)}...");
+    } catch (e) {
+       debugPrint("❌ reCAPTCHA execution failed: $e");
+       // If reCAPTCHA fails, we might still want to try or show error
+    }
+
     final result = await auth.signUpWithEmail(
       email: _emailController.text.trim(),
       password: _passwordController.text,
       name: _nameController.text.trim(),
+      recaptchaToken: recaptchaToken, // Pass the token here
     );
 
     if (!mounted) return;

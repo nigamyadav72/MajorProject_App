@@ -99,6 +99,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String name,
+    String? recaptchaToken,
   }) async {
     _isSignupLoading = true;
     notifyListeners();
@@ -107,6 +108,7 @@ class AuthProvider extends ChangeNotifier {
       email: email,
       password: password,
       name: name,
+      recaptchaToken: recaptchaToken,
     );
 
     _isSignupLoading = false;

@@ -16,6 +16,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   khalti_checkout_flutter: ^1.0.0-dev.5
   google_sign_in: ^6.2.1
+  g_recaptcha_v3: ^1.0.0
   
   # HTTP requests
   http: ^1.1.0
