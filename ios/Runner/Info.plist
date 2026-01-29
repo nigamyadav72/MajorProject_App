@@ -47,5 +47,20 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access for visual search</string>
+	<key>GIDClientID</key>
+	<string>379736466398-bskn351unl206g2fmseqbf3odmnaej68.apps.googleusercontent.com</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.379736466398-bskn351unl206g2fmseqbf3odmnaej68</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+		</dict>
+	</array>
 </dict>
 </plist>

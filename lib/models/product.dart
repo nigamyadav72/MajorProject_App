@@ -26,11 +26,17 @@ class Product {
       id: json['id'].toString(),
       name: json['name'],
       description: json['description'] ?? json['short_description'] ?? '',
-      price: double.parse(json['price']),
-      imageUrl: json['image'],
-      categories: [json['category_name']],
-      rating: double.parse(json['rating_average'] ?? '0'),
-      ratingCount: json['rating_count'] ?? 0,
+      price: (json['price'] is num)
+          ? (json['price'] as num).toDouble()
+          : double.tryParse(json['price']?.toString() ?? '0') ?? 0,
+      imageUrl: json['image']?.toString() ?? '',
+      categories: [json['category_name']?.toString() ?? ''],
+      rating: (json['rating_average'] is num)
+          ? (json['rating_average'] as num).toDouble()
+          : double.tryParse(json['rating_average']?.toString() ?? '0') ?? 0,
+      ratingCount: (json['rating_count'] is int)
+          ? json['rating_count'] as int
+          : int.tryParse(json['rating_count']?.toString() ?? '0') ?? 0,
       stockStatus: json['stock_status'] ?? 'in_stock',
     );
   }

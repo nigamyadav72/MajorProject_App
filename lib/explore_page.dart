@@ -40,6 +40,7 @@ class _ExplorePageState extends State<ExplorePage> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
 
+    if (!mounted) return;
     if (pickedFile != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Visual search coming soon 🚀')),
@@ -192,7 +193,7 @@ class _ExplorePageState extends State<ExplorePage> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 6,
                     offset: const Offset(0, -2),
                   ),

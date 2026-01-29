@@ -9,9 +9,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   
   
   flutter_secure_storage: ^9.0.0
+  khalti_checkout_flutter: ^1.0.0-dev.5
   google_sign_in: ^6.2.1
   
   # HTTP requests
