@@ -1,43 +1,14 @@
-```dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 import '../services/api_service.dart';
-import '../widgets/product_card.dart';
 
 class VisualSearchResult {
   final Product product;
   final double confidence;
 
   VisualSearchResult({required this.product, required this.confidence});
-}
-
-class VisualSearchResultsPage extends StatelessWidget {
-  // The provided snippet seems to be incomplete or misplaced.
-  // The line 'product;' is syntactically incorrect here.
-  // Assuming the intent was to add a new class definition,
-  // but the content within it is problematic.
-  // For now, I will add the class definition as provided,
-  // but note the syntax error.
-  // If this was meant to be part of VisualSearchResult, it's a duplicate.
-  // If it's meant to be part of VisualSearchResultsPage, it's incomplete.
-  // Keeping the structure as close to the provided snippet as possible,
-  // while acknowledging the syntax issue.
-  // product; // This line is syntactically incorrect.
-  // final double confidence; // This would be a duplicate if inside VisualSearchResult.
-  // VisualSearchResult({required this.product, required this.confidence}); // This would be a duplicate if inside VisualSearchResult.
-
-  // To make it syntactically correct, I'll make it an empty StatelessWidget.
-  const VisualSearchResultsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Visual Search Results')),
-      body: const Center(child: Text('Visual Search Results Page')),
-    );
-  }
 }
 
 class ProductProvider extends ChangeNotifier {
@@ -177,7 +148,7 @@ class ProductProvider extends ChangeNotifier {
       } else {
         final result = await _apiService.fetchProducts(
           page: 1,
-          limit: 100, // Fetch more to find matches
+          limit: 100, 
         );
         
         final allProducts = result['products'] as List<Product>;

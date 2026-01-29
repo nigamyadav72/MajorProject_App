@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/product_provider.dart';
 import '../widgets/product_card.dart';
-import '../widgets/product_card.dart';
 
 class VisualSearchResultsPage extends StatelessWidget {
   const VisualSearchResultsPage({super.key});
