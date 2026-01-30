@@ -10,7 +10,9 @@ import 'providers/cart_provider.dart';
 import 'providers/wishlist_provider.dart';
 
 class BottomNav extends StatefulWidget {
-  const BottomNav({super.key});
+  final int initialIndex;
+  
+  const BottomNav({super.key, this.initialIndex = 0});
 
   @override
   State<BottomNav> createState() => _BottomNavState();
@@ -21,8 +23,10 @@ class _BottomNavState extends State<BottomNav> {
   @override
   void initState() {
     super.initState();
-    // 🔄 Initial fetch for Cart and Wishlist
+    // Set initial navigation index
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NavigationProvider>().setIndex(widget.initialIndex);
+      // 🔄 Initial fetch for Cart and Wishlist
       context.read<CartProvider>().fetchCart();
       context.read<WishlistProvider>().fetchWishlist();
     });

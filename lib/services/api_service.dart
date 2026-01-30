@@ -145,20 +145,12 @@ class ApiService {
     required String phone,
     required String productId,
     required String productName,
+    String? returnUrl,
+    String? websiteUrl,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/payment/khalti/initiate/');
       debugPrint('🚀 Initiate Khalti Payment: $uri');
-      
-      // Amount in backend expects Paisa (usually) or the backend code converts it. 
-      // Looking at the user's Node code: `amount: body.amount`.
-      // Looking at the user's Python code: `amount: data.get('amount')`.
-      // The Khalti API expects Paisa.
-      // IF the backend expects Rupees, we shouldn't multiply. 
-      // IF the backend forwards raw amount, we MUST send Paisa.
-      // Safety: Send Paisa from here if backend is just a proxy.
-      // However, usually better to send Rupees and let backend handle, OR adhere to Khalti Standard (Paisa).
-      // Let's assume we send Paisa (amount * 100).
       
       final payload = {
         "name": name,
@@ -167,9 +159,12 @@ class ApiService {
         "phone": phone,
         "product_identity": productId,
         "product_name": productName,
-        "website_url": "https://example.com", // Or app specific
-        // return_url is handled by backend or default
+        // Mobile SDK doesn't redirect, but backend will use these for web clients
+        "return_url": returnUrl ?? "${AppConfig.backendBaseUrl}/api/payment/success/",
+        "website_url": websiteUrl ?? AppConfig.backendBaseUrl,
       };
+      
+      debugPrint('📡 Payment payload: $payload');
 
       final response = await _client.post(
         uri,

@@ -5,8 +5,15 @@ import 'providers/cart_provider.dart';
 import 'package:majorproject_app/services/khalti_helper.dart';
 import 'utils/image_url.dart';
 
-class CartPage extends StatelessWidget {
+class CartPage extends StatefulWidget {
   const CartPage({super.key});
+
+  @override
+  State<CartPage> createState() => _CartPageState();
+}
+
+class _CartPageState extends State<CartPage> {
+  bool _isCheckingOut = false;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +35,8 @@ class CartPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
+                        Icon(Icons.shopping_cart_outlined,
+                            size: 80, color: Colors.grey),
                         SizedBox(height: 16),
                         Text('Your cart is empty!',
                             style: TextStyle(fontSize: 18, color: Colors.grey)),
@@ -46,7 +54,8 @@ class CartPage extends StatelessWidget {
                 child: RefreshIndicator(
                   onRefresh: cart.fetchCart,
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 20),
                     itemCount: cart.items.length,
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
@@ -79,14 +88,16 @@ class CartPage extends StatelessWidget {
                                         width: 80,
                                         height: 80,
                                         color: Colors.grey.shade100,
-                                        child: const Icon(Icons.image, color: Colors.grey),
+                                        child: const Icon(Icons.image,
+                                            color: Colors.grey),
                                       ),
                                     )
                                   : Container(
                                       width: 80,
                                       height: 80,
                                       color: Colors.grey.shade100,
-                                      child: const Icon(Icons.shopping_cart, color: Colors.grey),
+                                      child: const Icon(Icons.shopping_cart,
+                                          color: Colors.grey),
                                     ),
                             ),
                             const SizedBox(width: 16),
@@ -119,17 +130,28 @@ class CartPage extends StatelessWidget {
                                   Row(
                                     children: [
                                       IconButton(
-                                        icon: const Icon(Icons.remove_circle_outline, size: 24, color: Color(0xFFFF6B6B)),
+                                        icon: const Icon(
+                                            Icons.remove_circle_outline,
+                                            size: 24,
+                                            color: Color(0xFFFF6B6B)),
                                         onPressed: () {
-                                          debugPrint('➖ Tapped minus for ${item.id}');
-                                          cart.updateQuantity(item.id, item.quantity - 1);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Updating quantity...'), duration: Duration(milliseconds: 500)),
+                                          debugPrint(
+                                              '➖ Tapped minus for ${item.id}');
+                                          cart.updateQuantity(
+                                              item.id, item.quantity - 1);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    'Updating quantity...'),
+                                                duration: Duration(
+                                                    milliseconds: 500)),
                                           );
                                         },
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 4),
                                         child: Text(
                                           '${item.quantity}',
                                           style: const TextStyle(
@@ -139,23 +161,40 @@ class CartPage extends StatelessWidget {
                                         ),
                                       ),
                                       IconButton(
-                                        icon: const Icon(Icons.add_circle_outline, size: 24, color: Color(0xFFFF6B6B)),
+                                        icon: const Icon(
+                                            Icons.add_circle_outline,
+                                            size: 24,
+                                            color: Color(0xFFFF6B6B)),
                                         onPressed: () {
-                                          debugPrint('➕ Tapped plus for ${item.id}');
-                                          cart.updateQuantity(item.id, item.quantity + 1);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Updating quantity...'), duration: Duration(milliseconds: 500)),
+                                          debugPrint(
+                                              '➕ Tapped plus for ${item.id}');
+                                          cart.updateQuantity(
+                                              item.id, item.quantity + 1);
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content: Text(
+                                                    'Updating quantity...'),
+                                                duration: Duration(
+                                                    milliseconds: 500)),
                                           );
                                         },
                                       ),
                                       const Spacer(),
                                       IconButton(
-                                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 24),
+                                        icon: const Icon(Icons.delete_outline,
+                                            color: Colors.redAccent, size: 24),
                                         onPressed: () {
-                                          debugPrint('🗑️ Tapped delete for ${item.id}');
+                                          debugPrint(
+                                              '🗑️ Tapped delete for ${item.id}');
                                           cart.removeFromCart(item.id);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Removing item...'), duration: Duration(milliseconds: 500)),
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content:
+                                                    Text('Removing item...'),
+                                                duration: Duration(
+                                                    milliseconds: 500)),
                                           );
                                         },
                                       ),
@@ -183,7 +222,8 @@ class CartPage extends StatelessWidget {
                       offset: const Offset(0, -5),
                     ),
                   ],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(30)),
                 ),
                 child: Column(
                   children: [
@@ -192,7 +232,10 @@ class CartPage extends StatelessWidget {
                       children: [
                         const Text(
                           'Total Amount',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.grey),
+                          style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey),
                         ),
                         Text(
                           '₹${cart.totalPrice.toStringAsFixed(2)}',
@@ -223,7 +266,8 @@ class CartPage extends StatelessWidget {
                         ),
                         child: const Text(
                           'Checkout Now',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -238,6 +282,24 @@ class CartPage extends StatelessWidget {
   }
 
   Future<void> _checkout(BuildContext context, CartProvider cart) async {
-    await KhaltiHelper().checkout(context, cart);
+    // Prevent multiple simultaneous checkout attempts
+    if (_isCheckingOut) {
+      debugPrint('⚠️ Checkout already in progress, ignoring tap');
+      return;
+    }
+
+    setState(() {
+      _isCheckingOut = true;
+    });
+
+    try {
+      await KhaltiHelper().checkout(context, cart);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCheckingOut = false;
+        });
+      }
+    }
   }
 }
