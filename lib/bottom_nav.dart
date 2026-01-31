@@ -8,6 +8,10 @@ import 'profile_page.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/wishlist_provider.dart';
+import 'providers/product_provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'screens/visual_search_results_page.dart';
 
 class BottomNav extends StatefulWidget {
   final int initialIndex;
@@ -23,10 +27,8 @@ class _BottomNavState extends State<BottomNav> {
   @override
   void initState() {
     super.initState();
-    // Set initial navigation index
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NavigationProvider>().setIndex(widget.initialIndex);
-      // 🔄 Initial fetch for Cart and Wishlist
       context.read<CartProvider>().fetchCart();
       context.read<WishlistProvider>().fetchWishlist();
     });
@@ -36,8 +38,8 @@ class _BottomNavState extends State<BottomNav> {
     HomePage(),
     ExplorePage(),
     CartPage(),
-    WishlistPage(),
     ProfilePage(),
+    WishlistPage(), // Keep available but maybe not in bottom bar
   ];
 
   @override
@@ -45,45 +47,180 @@ class _BottomNavState extends State<BottomNav> {
     final navigationProvider = context.watch<NavigationProvider>();
     final currentIndex = navigationProvider.selectedIndex;
 
+
     return Scaffold(
-      body: _pages[currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        onTap: (index) {
-          navigationProvider.setIndex(index);
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFFFF6B6B),
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: "Home",
+      body: IndexedStack(
+        index: currentIndex,
+        children: _pages,
+      ),
+      floatingActionButton: Container(
+        height: 65,
+        width: 65,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF2196F3), Color(0xFF00BCD4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore),
-            label: "Explore",
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _handleVisualSearch,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          highlightElevation: 0,
+          shape: const CircleBorder(),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const Icon(
+                Icons.center_focus_strong_rounded,
+                color: Colors.white,
+                size: 32,
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Icon(
+                  Icons.auto_awesome,
+                  color: Colors.white.withValues(alpha: 0.8),
+                  size: 14,
+                ),
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            activeIcon: Icon(Icons.shopping_cart),
-            label: "Cart",
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: Colors.white,
+        elevation: 15,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Left side items
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildNavItem(0, Icons.home_outlined, Icons.home, "Home", navigationProvider),
+                  _buildNavItem(1, Icons.explore_outlined, Icons.explore, "Market", navigationProvider),
+                ],
+              ),
+              // Right side items
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildNavItem(2, Icons.shopping_cart_outlined, Icons.shopping_cart, "Cart", navigationProvider),
+                  _buildNavItem(3, Icons.person_outline, Icons.person, "Profile", navigationProvider),
+                ],
+              ),
+            ],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            activeIcon: Icon(Icons.favorite),
-            label: "Wishlist",
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label, NavigationProvider provider) {
+    final isSelected = provider.selectedIndex == index;
+    return MaterialButton(
+      minWidth: 40,
+      onPressed: () => provider.setIndex(index),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            isSelected ? activeIcon : icon,
+            color: isSelected ? const Color(0xFFFF6B6B) : Colors.grey,
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: "Profile",
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isSelected ? const Color(0xFFFF6B6B) : Colors.grey,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleVisualSearch() async {
+    final ImagePicker picker = ImagePicker();
+    
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Visual Search",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF2196F3)),
+              title: const Text("Take a Photo"),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Color(0xFF2196F3)),
+              title: const Text("Choose from Gallery"),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source != null) {
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        if (!mounted) return;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                SizedBox(width: 20),
+                Text("Analyzing image..."),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        await context.read<ProductProvider>().visualSearch(File(image.path));
+        
+        if (!mounted) return;
+        
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const VisualSearchResultsPage()),
+        );
+      }
+    }
   }
 }

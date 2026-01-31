@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/product_provider.dart';
+import '../providers/navigation_provider.dart';
 import '../widgets/product_card.dart';
 import 'screens/visual_search_results_page.dart';
 
@@ -194,18 +195,32 @@ class _ExplorePageState extends State<ExplorePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Explore",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const Text(
-                    "Discover amazing products",
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Explore",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1,
+                            ),
+                          ),
+                          Text(
+                            "Discover amazing products",
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        onPressed: () => context.read<NavigationProvider>().setIndex(4),
+                        icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28),
+                      ),
+                    ],
                   ),
                   const Spacer(),
                   _buildExploreSearchBar(provider),

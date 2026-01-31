@@ -81,6 +81,7 @@ class _HomePageState extends State<HomePage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildBanner(),
+                _buildVisionTransformerCard(),
                 _buildSectionHeader("Categories", "View All", 
                     onTap: () => context.read<NavigationProvider>().setIndex(1)),
                 _buildCategories(),
@@ -154,7 +155,7 @@ class _HomePageState extends State<HomePage> {
                                 ],
                               ),
                               GestureDetector(
-                                onTap: () => context.read<NavigationProvider>().setIndex(4),
+                                onTap: () => context.read<NavigationProvider>().setIndex(3),
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
                                   decoration: const BoxDecoration(
@@ -465,6 +466,159 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+
+  /// 🧠 Vision Transformer Card (Responsive Full-Width Redesign)
+  Widget _buildVisionTransformerCard() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 15), // Remove horizontal margin to make it full width
+      width: screenWidth,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Background Decorative Elements
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF4facfe).withValues(alpha: 0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -30,
+            bottom: -30,
+            child: Icon(
+              Icons.blur_on,
+              size: 180,
+              color: Colors.white.withValues(alpha: 0.02),
+            ),
+          ),
+          // Floating Brain Icon
+          Positioned(
+            right: 10,
+            bottom: 10,
+            child: Icon(
+              Icons.psychology_outlined,
+              size: screenWidth * 0.25, // Responsive size
+              color: const Color(0xFF4facfe).withValues(alpha: 0.1),
+            ),
+          ),
+          // Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Dynamic height based on content
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.auto_awesome, size: 14, color: Color(0xFFFF6B6B)),
+                      SizedBox(width: 6),
+                      Text(
+                        "NEXT-GEN AI",
+                        style: TextStyle(
+                          color: Color(0xFFFF6B6B),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    "Vision Transformer",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: screenWidth > 400 ? 32 : 26, // Responsive font size
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Switch to the future of search.\nSnap a photo, find your product instantly.",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    height: 1.5,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _handleVisualSearch,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF0F172A),
+                    elevation: 10,
+                    shadowColor: Colors.black.withValues(alpha: 0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Launch AI Camera",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Icon(Icons.camera_enhance_rounded, size: 20),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// 📂 Categories
   Widget _buildCategories() {
