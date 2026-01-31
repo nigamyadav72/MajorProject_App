@@ -144,9 +144,9 @@ class ProductProvider extends ChangeNotifier {
       final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
       debugPrint('🔍 VISUAL SEARCH: Received ${results.length} raw results from server');
       
-      // Filter by confidence (10% threshold)
-      final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) >= 0.1).toList();
-      debugPrint('🔍 VISUAL SEARCH: ${filteredResults.length} results pass 10% threshold');
+      // Filter by confidence (Strictly above 60% threshold)
+      final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) > 0.6).toList();
+      debugPrint('🔍 VISUAL SEARCH: ${filteredResults.length} results pass 60% threshold');
 
       if (filteredResults.isEmpty) {
         _visualSearchResults = [];
