@@ -16,8 +16,8 @@ class ProductProvider extends ChangeNotifier {
 
   // -------------------- DATA --------------------
   List<Product> _products = [];
-  List<Category> _categories = []; 
-  Category? _selectedCategory; 
+  List<Category> _categories = [];
+  Category? _selectedCategory;
 
   bool _isLoading = false;
   String? _error;
@@ -141,43 +141,51 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final List<Map<String, dynamic>> results = await _apiService.visualSearch(imageFile);
-      debugPrint('🔍 VISUAL SEARCH: Received ${results.length} raw results from server');
-      
+      final List<Map<String, dynamic>> results =
+          await _apiService.visualSearch(imageFile);
+      debugPrint(
+          '🔍 VISUAL SEARCH: Received ${results.length} raw results from server');
+
       // Filter by confidence (Strictly above 60% threshold)
-      final filteredResults = results.where((res) => (res['confidence'] ?? 0.0) > 0.6).toList();
-      debugPrint('🔍 VISUAL SEARCH: ${filteredResults.length} results pass 60% threshold');
+      final filteredResults =
+          results.where((res) => (res['confidence'] ?? 0.0) > 0.40).toList();
+      debugPrint(
+          '🔍 VISUAL SEARCH: ${filteredResults.length} results pass 50% threshold');
 
       if (filteredResults.isEmpty) {
         _visualSearchResults = [];
       } else {
         // 1. Extract all unique SKUs
-        final List<String> skus = filteredResults.map((e) => e['sku'].toString()).toSet().toList();
+        final List<String> skus =
+            filteredResults.map((e) => e['sku'].toString()).toSet().toList();
         debugPrint('🔍 VISUAL SEARCH: Requesting products for SKUs: $skus');
 
         // 2. Fetch all products in one bulk request
-        final List<Product> matchedProducts = await _apiService.fetchProductsBySkus(skus);
-        debugPrint('✅ VISUAL SEARCH: Backend returned ${matchedProducts.length} unique products');
+        final List<Product> matchedProducts =
+            await _apiService.fetchProductsBySkus(skus);
+        debugPrint(
+            '✅ VISUAL SEARCH: Backend returned ${matchedProducts.length} unique products');
 
         // 3. Map SKUs to Confidence scores for easy lookup
         final Map<String, double> skuScores = {
-          for (var res in filteredResults) res['sku'].toString(): res['confidence'] as double
+          for (var res in filteredResults)
+            res['sku'].toString(): res['confidence'] as double
         };
 
         // 4. Create final results by linking fetched products to their scores
         final List<VisualSearchResult> finalResults = [];
         for (var product in matchedProducts) {
           // We need to know which SKU this product belongs to.
-          // Usually, the SKU is a field in the product. 
-          // Since our Product model doesn't have a 'sku' field yet, 
+          // Usually, the SKU is a field in the product.
+          // Since our Product model doesn't have a 'sku' field yet,
           // we'll try to match by ID (if ID == SKU) or search the scores map.
-          
+
           double score = 0.0;
           // Strategy: Try exact ID match first
           if (skuScores.containsKey(product.id)) {
             score = skuScores[product.id]!;
           } else {
-            // Fallback: Product name contains SKU or similar logic 
+            // Fallback: Product name contains SKU or similar logic
             // OR just use the highest score if we only have one match
             score = skuScores.values.isNotEmpty ? skuScores.values.first : 0.0;
           }
@@ -190,9 +198,11 @@ class ProductProvider extends ChangeNotifier {
 
         // 5. Finalize state
         _visualSearchResults = finalResults;
-        _visualSearchResults.sort((a, b) => b.confidence.compareTo(a.confidence));
-        
-        debugPrint('🏁 VISUAL SEARCH: Final unique products: ${_visualSearchResults.length}');
+        _visualSearchResults
+            .sort((a, b) => b.confidence.compareTo(a.confidence));
+
+        debugPrint(
+            '🏁 VISUAL SEARCH: Final unique products: ${_visualSearchResults.length}');
       }
     } catch (e) {
       debugPrint('🚨 VISUAL SEARCH CRITICAL: $e');
@@ -200,16 +210,17 @@ class ProductProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
-      debugPrint('📢 notifyListeners() called. Displaying ${_visualSearchResults.length} results.');
+      debugPrint(
+          '📢 notifyListeners() called. Displaying ${_visualSearchResults.length} results.');
     }
   }
 
   // -------------------- FETCH CATEGORIES --------------------
   Future<void> fetchCategories() async {
     try {
-      final data = await _apiService.fetchCategories(); 
-      _categories = [Category(id: 0, name: 'All'), ...data]; 
-      _selectedCategory = _categories.first; 
+      final data = await _apiService.fetchCategories();
+      _categories = [Category(id: 0, name: 'All'), ...data];
+      _selectedCategory = _categories.first;
     } catch (e) {
       _error = e.toString();
     }
