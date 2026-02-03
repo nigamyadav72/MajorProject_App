@@ -26,12 +26,16 @@ class ApiService {
     String search = '',
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/products/').replace(
+      final isSearch = search.isNotEmpty;
+      final endpoint = isSearch ? '$baseUrl/products/search/' : '$baseUrl/products/';
+      
+      final uri = Uri.parse(endpoint).replace(
         queryParameters: {
           'page': page.toString(),
           'limit': limit.toString(),
-          if (categoryId != null) 'category': categoryId.toString(),
-          if (search.isNotEmpty) 'search': search,
+          if (!isSearch && categoryId != null) 'category': categoryId.toString(),
+          if (isSearch) 'q': search,
+          if (!isSearch && search.isNotEmpty) 'search': search, // Fallback for safety
         },
       );
       debugPrint('🌐 Fetching Products from: $uri');

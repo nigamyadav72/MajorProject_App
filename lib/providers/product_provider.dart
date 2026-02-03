@@ -35,23 +35,15 @@ class ProductProvider extends ChangeNotifier {
   List<Product> get filteredProducts {
     if (_searchQuery.isEmpty) return _products;
 
-    final query = _searchQuery.toLowerCase();
-
-    final startsWith =
-        _products.where((p) => p.name.toLowerCase().startsWith(query)).toList();
-    final contains = _products
-        .where((p) =>
-            p.name.toLowerCase().contains(query) &&
-            !p.name.toLowerCase().startsWith(query))
-        .toList();
-
-    return [...startsWith, ...contains];
+    // If we have search results from the server, trust their ordering
+    // (The backend already prioritized startsWith > iregex > icontains)
+    return _products;
   }
 
   // Set search query for local filtering
   void setSearchQuery(String query) {
     _searchQuery = query;
-    notifyListeners();
+    fetchProducts(page: 1); // Trigger server-side fetch
   }
 
   // -------------------- GETTERS --------------------
