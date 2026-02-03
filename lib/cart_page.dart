@@ -212,7 +212,7 @@ class _CartPageState extends State<CartPage> {
               ),
               // 💳 Checkout Summary Refined
               Container(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 100),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: [

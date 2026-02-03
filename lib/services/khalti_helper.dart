@@ -32,7 +32,7 @@ class KhaltiHelper {
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
         email: auth.user?.email ?? 'guest@example.com',
-        phone: '9800000000',
+        phone: auth.user?.phoneNumber.isNotEmpty == true ? auth.user!.phoneNumber : '9800000000',
         amount: price * quantity,
         productId: productId,
         productName: productName,
@@ -47,7 +47,23 @@ class KhaltiHelper {
 
       // 2. Launch SDK
       if (!context.mounted) return;
-      await _launchKhalti(context, pidx);
+      await _launchKhalti(context, pidx, onSuccess: () async {
+        // Create order on backend for Buy Now (single product)
+        try {
+          debugPrint('📦 Creating Buy Now order on backend...');
+          await _api.createOrder(
+            shippingAddress: auth.user?.address.isNotEmpty == true 
+                ? auth.user!.address 
+                : (auth.user?.email ?? 'TBD'),
+            transactionId: pidx,
+            buyNowProductId: productId,
+          );
+          debugPrint('✅ Order created successfully');
+        } catch (e) {
+          debugPrint('❌ Error creating order: $e');
+          // Don't block the success flow
+        }
+      });
     } catch (e, stackTrace) {
       if (!context.mounted) return;
       debugPrint('❌ Khalti Payment Error: $e');
@@ -76,7 +92,7 @@ class KhaltiHelper {
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
         email: auth.user?.email ?? 'guest@example.com',
-        phone: '9800000000',
+        phone: auth.user?.phoneNumber.isNotEmpty == true ? auth.user!.phoneNumber : '9800000000',
         amount: cart.totalPrice,
         productId: 'cart_order_${DateTime.now().millisecondsSinceEpoch}',
         productName: 'Cart Checkout',
@@ -91,8 +107,26 @@ class KhaltiHelper {
 
       // 2. Launch SDK
       if (!context.mounted) return;
-      await _launchKhalti(context, pidx, onSuccess: () {
-        cart.clearCart();
+      await _launchKhalti(context, pidx, onSuccess: () async {
+        // Create order on backend after successful payment
+        try {
+          debugPrint('📦 Creating order on backend...');
+          await _api.createOrder(
+            shippingAddress: auth.user?.address.isNotEmpty == true 
+                ? auth.user!.address 
+                : (auth.user?.email ?? 'TBD'),
+            transactionId: pidx,
+          );
+          debugPrint('✅ Order created successfully');
+          
+          // Clear cart after order is created
+          await cart.clearCart();
+          debugPrint('🛒 Cart cleared');
+        } catch (e) {
+          debugPrint('❌ Error creating order: $e');
+          // Don't block the flow, still clear cart and show success
+          await cart.clearCart();
+        }
       });
     } catch (e, stackTrace) {
       if (!context.mounted) return;

@@ -17,9 +17,27 @@ class WishlistProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final List<dynamic> data = await _apiService.fetchWishlist();
-      _items = data.map((json) => Product.fromJson(json['product_details'] ?? json['product'])).toList();
+      debugPrint('📦 Wishlist API response: $data');
+      
+      _items = data.map((json) {
+        try {
+          // Backend returns {id, product, product_details, added_at}
+          // We want the product_details object
+          final productData = json['product_details'] ?? json['product'];
+          if (productData == null) {
+            debugPrint('⚠️ No product data in wishlist item: $json');
+            return null;
+          }
+          return Product.fromJson(productData);
+        } catch (e) {
+          debugPrint('❌ Error parsing wishlist item: $json\nError: $e');
+          return null;
+        }
+      }).whereType<Product>().toList(); // Filter out nulls
+      
+      debugPrint('✅ Loaded ${_items.length} wishlist items');
     } catch (e) {
-      debugPrint('Error fetching wishlist: $e');
+      debugPrint('❌ Error fetching wishlist: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

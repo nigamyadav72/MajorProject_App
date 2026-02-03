@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/order_provider.dart';
 import '../models/order.dart';
+import '../utils/image_url.dart';
 
 class MyOrdersPage extends StatefulWidget {
   const MyOrdersPage({super.key});
@@ -215,7 +216,7 @@ class _OrderCard extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Image.network(
-                          item.product.imageUrl,
+                          resolveImageUrl(item.product.imageUrl),
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => 
                               const Icon(Icons.image_not_supported_outlined, size: 20),

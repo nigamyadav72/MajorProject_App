@@ -690,7 +690,15 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     await cart.addToCart(int.parse(p.id), quantity: _quantity);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${p.name} added to cart')),
+      SnackBar(
+        content: Text('${p.name} added to cart'),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        backgroundColor: const Color(0xFF6366F1),
+      ),
     );
   }
 

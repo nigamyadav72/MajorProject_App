@@ -125,6 +125,27 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  // 📝 Update user profile (Address/Phone)
+  Future<Map<String, dynamic>> updateUserProfile({
+    String? firstName,
+    String? lastName,
+    String? address,
+    String? phone,
+  }) async {
+    final result = await _authService.updateUserProfile(
+      firstName: firstName,
+      lastName: lastName,
+      address: address,
+      phone: phone,
+    );
+    
+    if (result['success'] == true && result['user'] != null) {
+      _user = User.fromJson(result['user']);
+      notifyListeners();
+    }
+    return result;
+  }
+
   // 🛠️ Test Connection Diagnostic
   Future<Map<String, dynamic>> testConnection() async {
     return await _authService.testConnection();
@@ -132,25 +153,35 @@ class AuthProvider extends ChangeNotifier {
 }
 
 class User {
+  final int id;
   final String name;
   final String username;
   final String email;
   final String? photoUrl;
+  final String address;
+  final String phoneNumber;
+  final String firstName;
+  final String lastName;
 
   User({
+    required this.id,
     required this.name,
     required this.username,
     required this.email,
     this.photoUrl,
+    this.address = '',
+    this.phoneNumber = '',
+    this.firstName = '',
+    this.lastName = '',
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     String name = '';
     
-    // Try building from first/last name
-    final fName = json['first_name']?.toString() ?? '';
-    final lName = json['last_name']?.toString() ?? '';
-    name = '$fName $lName'.trim();
+    // Extracted directly or from profile
+    final firstName = json['first_name']?.toString() ?? '';
+    final lastName = json['last_name']?.toString() ?? '';
+    name = '$firstName $lastName'.trim();
 
     // Fallback to separate 'name' field if still empty
     if (name.isEmpty) {
@@ -171,10 +202,15 @@ class User {
     }
 
     return User(
+      id: json['id'] ?? 0,
       name: name,
       username: username,
       email: json['email'] ?? '',
       photoUrl: json['picture'] ?? json['photo_url'],
+      address: json['address']?.toString() ?? '',
+      phoneNumber: json['phone_number']?.toString() ?? '',
+      firstName: firstName,
+      lastName: lastName,
     );
   }
 }

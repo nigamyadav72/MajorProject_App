@@ -216,6 +216,55 @@ class AuthService {
     }
   }
 
+  /// Update user profile (Address/Phone/Name)
+  Future<Map<String, dynamic>> updateUserProfile({
+    String? firstName,
+    String? lastName,
+    String? address,
+    String? phone,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'access');
+      if (token == null) throw Exception('Not authenticated');
+
+      const url = '${AppConfig.backendBaseUrl}/api/auth/profile/';
+      
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          if (firstName != null) 'first_name': firstName,
+          if (lastName != null) 'last_name': lastName,
+          if (address != null) 'address': address,
+          if (phone != null) 'phone_number': phone,
+        }),
+      ).timeout(const Duration(seconds: 5));
+
+      final data = jsonDecode(response.body);
+      
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'user': data,
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['detail'] ?? data['error'] ?? 'Failed to update profile',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error updating user profile: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
   /// Test connection to backend
   Future<Map<String, dynamic>> testConnection() async {
     const url = '${AppConfig.backendBaseUrl}/api/categories/';

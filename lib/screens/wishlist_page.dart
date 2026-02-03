@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/wishlist_provider.dart';
+import '../providers/cart_provider.dart';
+import '../product_details_page.dart';
+import '../utils/image_url.dart';
 
 class WishlistPage extends StatefulWidget {
   const WishlistPage({super.key});
@@ -8,26 +13,13 @@ class WishlistPage extends StatefulWidget {
 }
 
 class _WishlistPageState extends State<WishlistPage> {
-  final List<Map<String, dynamic>> _wishlistItems = [
-    {
-      'name': 'Wireless Headphones',
-      'price': 2599.0,
-      'image': Icons.headphones,
-      'inStock': true,
-    },
-    {
-      'name': 'Smart Watch',
-      'price': 4999.0,
-      'image': Icons.watch,
-      'inStock': true,
-    },
-    {
-      'name': 'Camera',
-      'price': 12999.0,
-      'image': Icons.camera_alt,
-      'inStock': false,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WishlistProvider>().fetchWishlist();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,27 +29,42 @@ class _WishlistPageState extends State<WishlistPage> {
         title: const Text('Wishlist'),
         backgroundColor: Colors.white,
         elevation: 0,
+        foregroundColor: Colors.black,
       ),
-      body: _wishlistItems.isEmpty
-          ? _buildEmptyWishlist()
-          : ListView.builder(
+      body: Consumer<WishlistProvider>(
+        builder: (context, wishlist, _) {
+          if (wishlist.isLoading && wishlist.items.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (wishlist.items.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: wishlist.fetchWishlist,
+              child: Stack(
+                children: [
+                  _buildEmptyWishlist(),
+                  ListView(physics: const AlwaysScrollableScrollPhysics()),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: wishlist.fetchWishlist,
+            child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _wishlistItems.length,
+              itemCount: wishlist.items.length,
               itemBuilder: (context, index) {
-                final item = _wishlistItems[index];
+                final product = wishlist.items[index];
                 return _WishlistCard(
-                  name: item['name'],
-                  price: item['price'],
-                  icon: item['image'],
-                  inStock: item['inStock'],
-                  onRemove: () {
-                    setState(() {
-                      _wishlistItems.removeAt(index);
-                    });
-                  },
+                  product: product,
+                  onRemove: () => wishlist.removeFromWishlist(product.id),
                 );
               },
             ),
+          );
+        },
+      ),
     );
   }
 
@@ -95,17 +102,11 @@ class _WishlistPageState extends State<WishlistPage> {
 }
 
 class _WishlistCard extends StatelessWidget {
-  final String name;
-  final double price;
-  final IconData icon;
-  final bool inStock;
+  final dynamic product; // Using dynamic because Product model is imported
   final VoidCallback onRemove;
 
   const _WishlistCard({
-    required this.name,
-    required this.price,
-    required this.icon,
-    required this.inStock,
+    required this.product,
     required this.onRemove,
   });
 
@@ -124,74 +125,142 @@ class _WishlistCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ProductDetailsPage(
+                  productId: product.id,
+                  initialProduct: product,
+                ),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    resolveImageUrl(product.imageUrl),
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 80,
+                      color: Colors.grey[100],
+                      child: const Icon(Icons.image, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '₹${product.price.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF6366F1),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _ActionButton(
+                            icon: Icons.add_shopping_cart,
+                            label: 'Add',
+                            onTap: () async {
+                              final cart = context.read<CartProvider>();
+                              await cart.addToCart(int.parse(product.id));
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('${product.name} added to cart'),
+                                    behavior: SnackBarBehavior.floating,
+                                    margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: const Color(0xFF6366F1),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 12),
+                          _ActionButton(
+                            icon: Icons.delete_outline,
+                            label: 'Remove',
+                            color: Colors.redAccent,
+                            onTap: onRemove,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color = const Color(0xFF6366F1),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Row(
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                size: 40,
-                color: const Color(0xFF6366F1),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₹${price.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF6366F1),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: inStock
-                          ? Colors.green.withValues(alpha: 0.1)
-                          : Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      inStock ? 'In Stock' : 'Out of Stock',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: inStock ? Colors.green : Colors.red,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            IconButton(
-              onPressed: onRemove,
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
             ),
           ],
@@ -200,3 +269,4 @@ class _WishlistCard extends StatelessWidget {
     );
   }
 }
+

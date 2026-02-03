@@ -443,6 +443,7 @@ class ApiService {
       ).timeout(timeoutDuration);
 
       if (response.statusCode != 200) {
+        debugPrint('❌ Fetch Orders Error: status=${response.statusCode}, body=${response.body}');
         throw Exception('Failed to fetch orders: ${response.statusCode}');
       }
       
@@ -450,6 +451,37 @@ class ApiService {
       return decoded.map((e) => Order.fromJson(e)).toList();
     } catch (e) {
       debugPrint('Error fetching orders: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> createOrder({
+    required String shippingAddress,
+    String? transactionId,
+    String? buyNowProductId,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/orders/');
+      debugPrint('🚀 Create Order POST: $uri');
+      final response = await _client.post(
+        uri,
+        headers: await _getAuthHeaders(),
+        body: json.encode({
+          'shipping_address': shippingAddress,
+          if (transactionId != null) 'transaction_id': transactionId,
+          if (buyNowProductId != null) 'buy_now_product_id': buyNowProductId,
+          'status': 'ordered',
+        }),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint('❌ Create Order Error: ${response.body}');
+        throw Exception('Failed to create order: ${response.body}');
+      }
+      
+      return json.decode(response.body);
+    } catch (e) {
+      debugPrint('Error creating order: $e');
       rethrow;
     }
   }
