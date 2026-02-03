@@ -22,15 +22,28 @@ class CartProvider extends ChangeNotifier {
       final dynamic response = await _apiService.fetchCart();
       List<dynamic> data = [];
       
+      debugPrint('📦 Raw Cart Response: $response');
+      
       if (response is List) {
         data = response;
       } else if (response is Map && response['items'] != null) {
         data = response['items'] as List;
+        debugPrint('📦 Cart items count (from map): ${data.length}');
+      } else {
+        debugPrint('⚠️ Unexpected cart response format: $response');
       }
 
-      _items = data.map((json) => CartItem.fromJson(json)).toList();
-    } catch (e) {
-      debugPrint('Error fetching cart: $e');
+      _items = data.map((json) {
+        try {
+          return CartItem.fromJson(json);
+        } catch (e) {
+          debugPrint('❌ Error parsing cart item: $json\nError: $e');
+          rethrow;
+        }
+      }).toList();
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error fetching cart: $e');
+      debugPrint('Stack trace: $stackTrace');
     } finally {
       _isLoading = false;
       notifyListeners();

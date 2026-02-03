@@ -226,6 +226,14 @@ class ApiService {
   Future<Map<String, String>> _getAuthHeaders() async {
     const storage = FlutterSecureStorage();
     final token = await storage.read(key: 'access');
+    
+    if (token == null) {
+      debugPrint('⚠️ _getAuthHeaders: Token is NULL');
+    } else {
+      debugPrint('🔑 _getAuthHeaders: Token found (length: ${token.length})');
+      // debugPrint('🔑 Token: $token'); // Uncomment to inspect full token if needed
+    }
+
     return {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
