@@ -8,8 +8,8 @@ class AppConfig {
   /// - Android emulator: `http://10.0.2.2:8000`
   /// - Real Android device (USB): `http://<your Mac LAN IP>:8000` (see ANDROID_GOOGLE_SIGNIN.md)
   /// this is for the wireless debugging in android
-  static const String backendBaseUrl = 'http://10.124.96.168:8000';
-  static const String modelServerUrl = 'http://10.124.96.168:8001';
+  static const String backendBaseUrl = 'http://192.168.10.67:8000';
+  static const String modelServerUrl = 'http://192.168.10.67:8001';
   //this is for the normal run using usb debugging
   // static const String backendBaseUrl = 'http://localhost:8000';
   // static const String modelServerUrl = 'http://localhost:8001';
