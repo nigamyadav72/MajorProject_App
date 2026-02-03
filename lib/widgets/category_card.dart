@@ -28,7 +28,7 @@ class CategoryCard extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: isSelected
                   ? const LinearGradient(
-                      colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+                      colors: [Color(0xFF6366F1), Color(0xFF06B6D4)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
@@ -38,7 +38,7 @@ class CategoryCard extends StatelessWidget {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),

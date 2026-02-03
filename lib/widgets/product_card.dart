@@ -148,7 +148,7 @@ class ProductCard extends StatelessWidget {
                             '₹${product.price.toStringAsFixed(0)}',
                             style: const TextStyle(
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFFFF6B6B),
+                              color: Color(0xFF6366F1),
                               fontSize: 16,
                             ),
                           ),

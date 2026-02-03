@@ -59,13 +59,13 @@ class _BottomNavState extends State<BottomNav> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const LinearGradient(
-            colors: [Color(0xFF2196F3), Color(0xFF00BCD4)],
+            colors: [Color(0xFF6366F1), Color(0xFF06B6D4)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+              color: const Color(0xFF6366F1).withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(0, 5),
             ),
@@ -142,13 +142,13 @@ class _BottomNavState extends State<BottomNav> {
         children: [
           Icon(
             isSelected ? activeIcon : icon,
-            color: isSelected ? const Color(0xFFFF6B6B) : Colors.grey,
+            color: isSelected ? const Color(0xFF6366F1) : Colors.grey,
           ),
           Text(
             label,
             style: TextStyle(
               fontSize: 12,
-              color: isSelected ? const Color(0xFFFF6B6B) : Colors.grey,
+              color: isSelected ? const Color(0xFF6366F1) : Colors.grey,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -176,12 +176,12 @@ class _BottomNavState extends State<BottomNav> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFF2196F3)),
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF6366F1)),
               title: const Text("Take a Photo"),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFF2196F3)),
+              leading: const Icon(Icons.photo_library, color: Color(0xFF6366F1)),
               title: const Text("Choose from Gallery"),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),

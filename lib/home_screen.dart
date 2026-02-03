@@ -23,22 +23,22 @@ class _HomePageState extends State<HomePage> {
 
   final List<Map<String, dynamic>> _promoBanners = [
     {
-      'title': 'New Collection',
-      'subtitle': 'Get up to 40% OFF',
-      'colors': [const Color(0xFFFF6B6B), const Color(0xFFFF8E53)],
-      'icon': Icons.flash_on,
+      'title': 'Next-Gen Tech',
+      'subtitle': 'Up to 50% OFF',
+      'colors': [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+      'icon': Icons.bolt,
     },
     {
-      'title': 'Smart Tech',
-      'subtitle': 'Latest Gadgets 2024',
-      'colors': [const Color(0xFF4facfe), const Color(0xFF00f2fe)],
-      'icon': Icons.devices_other,
+      'title': 'Smart World',
+      'subtitle': 'Futuristic Gadgets',
+      'colors': [const Color(0xFF06B6D4), const Color(0xFF3B82F6)],
+      'icon': Icons.rocket_launch,
     },
     {
-      'title': 'Summer Sale',
-      'subtitle': 'Free Delivery on all',
-      'colors': [const Color(0xFF43e97b), const Color(0xFF38f9d7)],
-      'icon': Icons.shopping_bag,
+      'title': 'Premium Style',
+      'subtitle': 'Elegance Redefined',
+      'colors': [const Color(0xFF1E293B), const Color(0xFF475569)],
+      'icon': Icons.auto_awesome,
     },
   ];
 
@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -115,11 +115,29 @@ class _HomePageState extends State<HomePage> {
           child: Stack(
             children: [
               Positioned(
-                top: -30,
-                right: -30,
-                child: CircleAvatar(
-                  radius: 100,
-                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                top: -50,
+                right: -50,
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF6366F1).withValues(alpha: 0.2),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 20,
+                left: -30,
+                child: Icon(
+                  Icons.blur_on,
+                  size: 150,
+                  color: Colors.white.withValues(alpha: 0.05),
                 ),
               ),
               SafeArea(
@@ -169,7 +187,7 @@ class _HomePageState extends State<HomePage> {
                                       ? NetworkImage(user!.photoUrl!) 
                                       : null,
                                     child: user?.photoUrl == null 
-                                      ? const Icon(Icons.person, color: Color(0xFFFF6B6B)) 
+                                      ? const Icon(Icons.person, color: Color(0xFF6366F1)) 
                                       : null,
                                   ),
                                 ),
@@ -211,8 +229,8 @@ class _HomePageState extends State<HomePage> {
             child: Text(
               action,
               style: const TextStyle(
-                color: Color(0xFFFF6B6B),
-                fontWeight: FontWeight.w600,
+                color: Color(0xFF6366F1),
+                fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
             ),
@@ -247,7 +265,7 @@ class _HomePageState extends State<HomePage> {
         decoration: InputDecoration(
           hintText: "Search for products...",
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFFFF6B6B)),
+          prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
           suffixIcon: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -261,7 +279,7 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               IconButton(
-                icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFFFF6B6B)),
+                icon: const Icon(Icons.camera_alt_outlined, color: Color(0xFF6366F1)),
                 onPressed: _handleVisualSearch,
               ),
               const SizedBox(width: 8),
@@ -295,12 +313,12 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFFFF6B6B)),
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF6366F1)),
               title: const Text("Take a Photo"),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFFFF6B6B)),
+              leading: const Icon(Icons.photo_library, color: Color(0xFF6366F1)),
               title: const Text("Choose from Gallery"),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -454,7 +472,7 @@ class _HomePageState extends State<HomePage> {
               width: _currentBannerIndex == index ? 20 : 6,
               decoration: BoxDecoration(
                 color: _currentBannerIndex == index 
-                  ? const Color(0xFFFF6B6B) 
+                  ? const Color(0xFF6366F1) 
                   : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(3),
               ),
@@ -537,22 +555,22 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.15),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.auto_awesome, size: 14, color: Color(0xFFFF6B6B)),
+                      Icon(Icons.auto_awesome, size: 14, color: Color(0xFF6366F1)),
                       SizedBox(width: 6),
                       Text(
                         "NEXT-GEN AI",
                         style: TextStyle(
-                          color: Color(0xFFFF6B6B),
+                          color: Color(0xFF6366F1),
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.5,

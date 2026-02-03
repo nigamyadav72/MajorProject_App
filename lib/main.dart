@@ -60,6 +60,19 @@ class MyApp extends StatelessWidget {
             title: 'E-Pasal',
             theme: ThemeData(
               useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFF6366F1),
+                primary: const Color(0xFF6366F1),
+                secondary: const Color(0xFF06B6D4),
+                surface: Colors.white,
+                background: const Color(0xFFF8FAFC),
+                brightness: Brightness.light,
+              ),
+              fontFamily: 'Outfit', // A more modern font feel
+              textTheme: const TextTheme(
+                headlineMedium: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                bodyMedium: TextStyle(color: Color(0xFF475569)),
+              ),
             ),
             home: auth.isAuthenticated ? const BottomNav() : const LoginPage(),
           );
