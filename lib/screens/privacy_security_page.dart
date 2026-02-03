@@ -139,7 +139,7 @@ class PrivacySecurityPage extends StatelessWidget {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFF6B6B),
+              backgroundColor: const Color(0xFF6366F1),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -170,7 +170,7 @@ class _SecurityOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isDestructive ? Colors.red : const Color(0xFFFF6B6B);
+    final color = isDestructive ? Colors.red : const Color(0xFF6366F1);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),

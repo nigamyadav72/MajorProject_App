@@ -34,8 +34,8 @@ class ProfilePage extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFFFF6B6B),
-                      Color(0xFFFF8E53),
+                      Color(0xFF0F172A),
+                      Color(0xFF1E293B),
                     ],
                   ),
                 ),
@@ -63,7 +63,7 @@ class ProfilePage extends StatelessWidget {
                               ? const Icon(
                                   Icons.person,
                                   size: 40,
-                                  color: Color(0xFFFF6B6B),
+                                  color: Color(0xFF6366F1),
                                 )
                               : null,
                         ),
@@ -144,7 +144,7 @@ class ProfilePage extends StatelessWidget {
                           icon: Icons.favorite_outline,
                           count: '8',
                           label: 'Wishlist',
-                          color: Color(0xFFFF6B6B),
+                          color: Color(0xFF6366F1),
                         ),
                       ),
                       SizedBox(width: 12),
@@ -486,12 +486,12 @@ class _MenuCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     icon,
-                    color: const Color(0xFFFF6B6B),
+                    color: const Color(0xFF6366F1),
                     size: 24,
                   ),
                 ),

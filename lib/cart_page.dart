@@ -122,7 +122,7 @@ class _CartPageState extends State<CartPage> {
                                     style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
-                                      color: Color(0xFFFF6B6B),
+                                      color: Color(0xFF6366F1),
                                     ),
                                   ),
                                   const SizedBox(height: 12),
@@ -133,7 +133,7 @@ class _CartPageState extends State<CartPage> {
                                         icon: const Icon(
                                             Icons.remove_circle_outline,
                                             size: 24,
-                                            color: Color(0xFFFF6B6B)),
+                                            color: Color(0xFF6366F1)),
                                         onPressed: () {
                                           debugPrint(
                                               '➖ Tapped minus for ${item.id}');
@@ -164,7 +164,7 @@ class _CartPageState extends State<CartPage> {
                                         icon: const Icon(
                                             Icons.add_circle_outline,
                                             size: 24,
-                                            color: Color(0xFFFF6B6B)),
+                                            color: Color(0xFF6366F1)),
                                         onPressed: () {
                                           debugPrint(
                                               '➕ Tapped plus for ${item.id}');
@@ -242,7 +242,7 @@ class _CartPageState extends State<CartPage> {
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFFFF6B6B),
+                            color: Color(0xFF6366F1),
                           ),
                         ),
                       ],
@@ -257,7 +257,7 @@ class _CartPageState extends State<CartPage> {
                           _checkout(context, cart);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF6B6B),
+                          backgroundColor: const Color(0xFF6366F1),
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(

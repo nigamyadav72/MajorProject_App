@@ -132,13 +132,13 @@ class _WishlistCard extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
                 size: 40,
-                color: const Color(0xFFFF6B6B),
+                color: const Color(0xFF6366F1),
               ),
             ),
             const SizedBox(width: 16),
@@ -160,7 +160,7 @@ class _WishlistCard extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFFF6B6B),
+                      color: Color(0xFF6366F1),
                     ),
                   ),
                   const SizedBox(height: 4),

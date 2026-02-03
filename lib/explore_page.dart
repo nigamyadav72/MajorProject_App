@@ -57,12 +57,12 @@ class _ExplorePageState extends State<ExplorePage> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Color(0xFFFF6B6B)),
+              leading: const Icon(Icons.camera_alt, color: Color(0xFF6366F1)),
               title: const Text("Take a Photo"),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Color(0xFFFF6B6B)),
+              leading: const Icon(Icons.photo_library, color: Color(0xFF6366F1)),
               title: const Text("Choose from Gallery"),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -184,7 +184,7 @@ class _ExplorePageState extends State<ExplorePage> {
         background: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+              colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -273,7 +273,7 @@ class _ExplorePageState extends State<ExplorePage> {
             decoration: InputDecoration(
               hintText: 'Search products...',
               hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-              prefixIcon: const Icon(Icons.search, color: Color(0xFFFF6B6B)),
+              prefixIcon: const Icon(Icons.search, color: Color(0xFF6366F1)),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.camera_alt_outlined, color: Colors.grey, size: 20),
                 onPressed: _handleVisualSearch,
@@ -306,7 +306,7 @@ class _ExplorePageState extends State<ExplorePage> {
                 provider.changeCategory(category);
                 _loadPage(1);
               },
-              selectedColor: const Color(0xFFFF6B6B),
+              selectedColor: const Color(0xFF6366F1),
               labelStyle: TextStyle(
                 color: selected ? Colors.white : Colors.black87,
                 fontWeight: selected ? FontWeight.bold : FontWeight.normal,
@@ -373,7 +373,7 @@ class _ExplorePageState extends State<ExplorePage> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.all(10),
-          child: Icon(icon, color: onPressed == null ? Colors.grey : const Color(0xFFFF6B6B)),
+          child: Icon(icon, color: onPressed == null ? Colors.grey : const Color(0xFF6366F1)),
         ),
       ),
     );

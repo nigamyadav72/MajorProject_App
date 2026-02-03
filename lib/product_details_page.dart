@@ -306,18 +306,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: Colors.blue.shade50,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.shade200),
+        border: Border.all(color: Colors.blue.shade200),
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.orange.shade700),
+          Icon(Icons.info_outline, color: Colors.blue.shade700),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _error!,
-              style: TextStyle(color: Colors.orange.shade900, fontSize: 13),
+              style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
             ),
           ),
           TextButton(

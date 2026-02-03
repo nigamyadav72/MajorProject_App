@@ -105,7 +105,7 @@ class _AddressCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? const Color(0xFFFF6B6B) : Colors.transparent,
+          color: isSelected ? const Color(0xFF6366F1) : Colors.transparent,
           width: 2,
         ),
         boxShadow: [
@@ -134,7 +134,7 @@ class _AddressCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -190,7 +190,7 @@ class _AddressCard extends StatelessWidget {
                       icon: const Icon(Icons.edit, size: 18),
                       label: const Text('Edit'),
                       style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFFFF6B6B),
+                        foregroundColor: const Color(0xFF6366F1),
                       ),
                     ),
                     TextButton.icon(

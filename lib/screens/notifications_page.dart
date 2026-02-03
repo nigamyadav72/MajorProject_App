@@ -139,7 +139,7 @@ class _SettingCard extends StatelessWidget {
             Switch(
               value: value,
               onChanged: onChanged,
-              activeTrackColor: const Color(0xFFFF6B6B),
+              activeTrackColor: const Color(0xFF6366F1),
             ),
           ],
         ),

@@ -49,7 +49,7 @@ class _OrderCard extends StatelessWidget {
       case 'Delivered':
         return Colors.green;
       case 'In Transit':
-        return Colors.orange;
+        return Colors.blue;
       case 'Processing':
         return Colors.blue;
       default:
@@ -165,7 +165,7 @@ class _OrderCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF6B6B),
+                        color: Color(0xFF6366F1),
                       ),
                     ),
                   ],

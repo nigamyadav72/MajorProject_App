@@ -125,7 +125,7 @@ class _FAQCardState extends State<_FAQCard> {
                     ),
                     Icon(
                       _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                      color: const Color(0xFFFF6B6B),
+                      color: const Color(0xFF6366F1),
                     ),
                   ],
                 ),
@@ -188,10 +188,10 @@ class _ContactCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF6B6B).withValues(alpha: 0.1),
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: const Color(0xFFFF6B6B), size: 24),
+                  child: Icon(icon, color: const Color(0xFF6366F1), size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
