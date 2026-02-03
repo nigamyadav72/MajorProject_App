@@ -8,6 +8,7 @@ import 'providers/wishlist_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/order_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => WishlistProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
@@ -65,9 +67,10 @@ class MyApp extends StatelessWidget {
                 primary: const Color(0xFF6366F1),
                 secondary: const Color(0xFF06B6D4),
                 surface: Colors.white,
-                background: const Color(0xFFF8FAFC),
+                // background property is deprecated
                 brightness: Brightness.light,
               ),
+              scaffoldBackgroundColor: const Color(0xFFF8FAFC),
               fontFamily: 'Outfit', // A more modern font feel
               textTheme: const TextTheme(
                 headlineMedium: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),

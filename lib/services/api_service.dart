@@ -9,6 +9,7 @@ import '../config/app_config.dart';
 import '../models/product.dart';
 import '../models/product_detail.dart';
 import '../models/category.dart';
+import '../models/order.dart';
 
 class ApiService {
   static String get baseUrl => '${AppConfig.backendBaseUrl}/api';
@@ -417,6 +418,48 @@ class ApiService {
       }
     } catch (e) {
       debugPrint('Error removing from wishlist: $e');
+      rethrow;
+    }
+  }
+
+  // ============================
+  // ✅ ORDERS API
+  // ============================
+  Future<List<Order>> fetchOrders() async {
+    try {
+      final uri = Uri.parse('$baseUrl/orders/');
+      debugPrint('🚀 Fetch Orders: $uri');
+      final response = await _client.get(
+        uri,
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch orders: ${response.statusCode}');
+      }
+      
+      final List<dynamic> decoded = json.decode(response.body);
+      return decoded.map((e) => Order.fromJson(e)).toList();
+    } catch (e) {
+      debugPrint('Error fetching orders: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> cancelOrder(int orderId) async {
+    try {
+      final url = '$baseUrl/orders/$orderId/cancel/';
+      debugPrint('🚀 Cancel Order POST: $url');
+      final response = await _client.post(
+        Uri.parse(url),
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to cancel order: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error cancelling order: $e');
       rethrow;
     }
   }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/order_provider.dart';
+import 'providers/wishlist_provider.dart';
 import 'screens/my_orders_page.dart';
 import 'screens/wishlist_page.dart';
 import 'screens/addresses_page.dart';
@@ -10,13 +12,29 @@ import 'screens/notifications_page.dart';
 import 'screens/privacy_security_page.dart';
 import 'screens/help_support_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<OrderProvider>().fetchOrders();
+      context.read<WishlistProvider>().fetchWishlist();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final user = auth.user;
+    final orderProvider = context.watch<OrderProvider>();
+    final wishlistProvider = context.watch<WishlistProvider>();
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -128,27 +146,27 @@ class ProfilePage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Stats Cards
-                  const Row(
+                  Row(
                     children: [
                       Expanded(
                         child: _StatCard(
                           icon: Icons.shopping_bag_outlined,
-                          count: '12',
+                          count: orderProvider.orders.length.toString(),
                           label: 'Orders',
-                          color: Color(0xFF4ECDC4),
+                          color: const Color(0xFF4ECDC4),
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: _StatCard(
                           icon: Icons.favorite_outline,
-                          count: '8',
+                          count: wishlistProvider.items.length.toString(),
                           label: 'Wishlist',
-                          color: Color(0xFF6366F1),
+                          color: const Color(0xFF6366F1),
                         ),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const SizedBox(width: 12),
+                      const Expanded(
                         child: _StatCard(
                           icon: Icons.payments_outlined,
                           count: '3',

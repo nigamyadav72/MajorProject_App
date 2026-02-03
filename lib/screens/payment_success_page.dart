@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../bottom_nav.dart';
+import 'my_orders_page.dart';
 
 class PaymentSuccessPage extends StatelessWidget {
   const PaymentSuccessPage({super.key});
@@ -76,14 +77,12 @@ class PaymentSuccessPage extends StatelessWidget {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  // Maybe navigate to orders page in the future
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const BottomNav()),
-                    (route) => false,
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MyOrdersPage()),
                   );
                 },
                 child: Text(
-                  'View Order Details',
+                  'View My Orders',
                   style: TextStyle(
                     color: Colors.grey[800],
                     fontWeight: FontWeight.w600,
