@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HelpSupportPage extends StatelessWidget {
   const HelpSupportPage({super.key});
+
+  Future<void> _launchUrl(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,20 +57,25 @@ class HelpSupportPage extends StatelessWidget {
           _ContactCard(
             icon: Icons.email,
             title: 'Email',
-            value: 'support@epasal.com',
-            onTap: () {},
+            value: 'yadavnigam72@gmail.com',
+            onTap: () => _launchUrl('mailto:yadavnigam72@gmail.com'),
           ),
           _ContactCard(
             icon: Icons.phone,
             title: 'Phone',
-            value: '+977 9800000000',
-            onTap: () {},
+            value: '+977 9769812470',
+            onTap: () => _launchUrl('tel:+9779769812470'),
           ),
           _ContactCard(
             icon: Icons.chat_bubble_outline,
             title: 'Live Chat',
             value: 'Chat with us now',
-            onTap: () {},
+            onTap: () {
+              // Placeholder for chat support - could link to WhatsApp or a chat service
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Live Chat feature coming soon!')),
+              );
+            },
           ),
         ],
       ),
