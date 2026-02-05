@@ -11,6 +11,7 @@ import 'screens/payment_methods_page.dart';
 import 'screens/notifications_page.dart';
 import 'screens/privacy_security_page.dart';
 import 'screens/help_support_page.dart';
+import 'screens/seller_dashboard_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -199,6 +200,17 @@ class _ProfilePageState extends State<ProfilePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const MyOrdersPage()),
+                      );
+                    },
+                  ),
+                  _MenuCard(
+                    icon: Icons.dashboard_outlined,
+                    title: 'Seller Dashboard',
+                    subtitle: 'Manage your products and sales',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SellerDashboardPage()),
                       );
                     },
                   ),

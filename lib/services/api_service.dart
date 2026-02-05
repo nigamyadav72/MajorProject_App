@@ -505,6 +505,165 @@ class ApiService {
   }
 
   // ============================
+  // ✅ SELLER API
+  // ============================
+  Future<List<Product>> fetchSellerProducts() async {
+    try {
+      final uri = Uri.parse('$baseUrl/products/my-products/');
+      debugPrint('🚀 Fetch Seller Products: $uri');
+      final response = await _client.get(
+        uri,
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch seller products: ${response.statusCode}');
+      }
+
+      final decoded = json.decode(response.body);
+      // Backend might return paginated results
+      final List<dynamic> results = (decoded is Map && decoded.containsKey('results')) 
+          ? decoded['results'] 
+          : decoded;
+      
+      return results.map((e) => Product.fromJson(e)).toList();
+    } catch (e) {
+      debugPrint('Error fetching seller products: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchSellerStats() async {
+    try {
+      final uri = Uri.parse('$baseUrl/products/stats/');
+      debugPrint('🚀 Fetch Seller Stats: $uri');
+      final response = await _client.get(
+        uri,
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch seller stats: ${response.statusCode}');
+      }
+
+      return json.decode(response.body);
+    } catch (e) {
+      debugPrint('Error fetching seller stats: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteProduct(int productId) async {
+    try {
+      final uri = Uri.parse('$baseUrl/products/$productId/');
+      debugPrint('🚀 Delete Product DELETE: $uri');
+      final response = await _client.delete(
+        uri,
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 204 && response.statusCode != 200) {
+        throw Exception('Failed to delete product: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error deleting product: $e');
+      rethrow;
+    }
+  }
+
+  Future<Product> addProduct({
+    required String name,
+    required String description,
+    required String shortDescription,
+    required double price,
+    required int categoryId,
+    required int stock,
+    required String sku,
+    required bool isActive,
+    File? imageFile,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/products/');
+      debugPrint('🚀 Add Product Multipart POST: $uri');
+      
+      final request = http.MultipartRequest('POST', uri);
+      final headers = await _getAuthHeaders();
+      headers.forEach((key, value) {
+        request.headers[key] = value;
+      });
+
+      request.fields['name'] = name;
+      request.fields['description'] = description;
+      request.fields['short_description'] = shortDescription;
+      request.fields['price'] = price.toString();
+      request.fields['category'] = categoryId.toString();
+      request.fields['stock'] = stock.toString();
+      request.fields['sku'] = sku;
+      request.fields['is_active'] = isActive.toString();
+
+      if (imageFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image',
+            imageFile.path,
+          ),
+        );
+      }
+
+      final streamedResponse = await request.send().timeout(timeoutDuration);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        debugPrint('❌ Add Product Error: ${response.body}');
+        throw Exception('Failed to add product: ${response.body}');
+      }
+
+      return Product.fromJson(json.decode(response.body));
+    } catch (e) {
+      debugPrint('Error adding product: $e');
+      rethrow;
+    }
+  }
+
+  Future<Product> updateProduct(int productId, Map<String, dynamic> productData) async {
+    try {
+      final uri = Uri.parse('$baseUrl/products/$productId/');
+      debugPrint('🚀 Update Product PATCH: $uri');
+      final response = await _client.patch(
+        uri,
+        headers: await _getAuthHeaders(),
+        body: json.encode(productData),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update product: ${response.body}');
+      }
+
+      return Product.fromJson(json.decode(response.body));
+    } catch (e) {
+      debugPrint('Error updating product: $e');
+      rethrow;
+    }
+  }
+
+  Future<String> uploadProductImage(File imageFile) async {
+    try {
+      // Backend probably has an endpoint for image uploads or expects it in addProduct
+      // For now, let's assume there's a standalone upload if needed, 
+      // or we handle image in addProduct (multipart).
+      // If addProduct/updateProduct handles images, we might need multipart versions.
+      
+      // Let's implement a multipart add product if needed, but for simplicity 
+      // let's assume we can upload image and get a URL first, OR use multipart in add.
+      
+      // I'll check how products are created in the web app.
+      return ""; // Placeholder
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // ============================
   // ✅ CLEANUP
   // ============================
   void dispose() {

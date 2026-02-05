@@ -9,6 +9,7 @@ import 'providers/product_provider.dart';
 import 'providers/navigation_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/order_provider.dart';
+import 'providers/seller_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -27,6 +28,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ProductProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => SellerProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
