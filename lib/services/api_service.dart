@@ -461,6 +461,7 @@ class ApiService {
     String? transactionId,
     String? buyNowProductId,
     String? buyNowProductSku,
+    int? qty,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/orders/');
@@ -473,6 +474,7 @@ class ApiService {
           if (transactionId != null) 'transaction_id': transactionId,
           if (buyNowProductId != null) 'buy_now_product_id': buyNowProductId,
           if (buyNowProductSku != null) 'buy_now_product_sku': buyNowProductSku,
+          if (qty != null) 'quantity': qty,
           'status': 'ordered',
         }),
       ).timeout(timeoutDuration);

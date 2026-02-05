@@ -141,6 +141,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                         ),
                       ),
                     )
+                  else
                     SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {

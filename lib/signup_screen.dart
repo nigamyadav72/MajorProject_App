@@ -19,6 +19,7 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   String? _captchaToken;
+  String _selectedRole = 'buyer'; // 'buyer' or 'seller'
 
   @override
   void dispose() {
@@ -45,6 +46,7 @@ class _SignUpPageState extends State<SignUpPage> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       recaptchaToken: _captchaToken,
+      role: _selectedRole,
     );
 
     if (!mounted) return;
@@ -181,6 +183,90 @@ class _SignUpPageState extends State<SignUpPage> {
                             ),
                             const SizedBox(height: 16),
 
+                            // Role Selection
+                            const Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "I am a:",
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => setState(() => _selectedRole = 'buyer'),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: _selectedRole == 'buyer' ? const Color(0xFF2575FC).withOpacity(0.1) : Colors.transparent,
+                                        border: Border.all(
+                                          color: _selectedRole == 'buyer' ? const Color(0xFF2575FC) : Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.shopping_bag_outlined,
+                                            size: 18,
+                                            color: _selectedRole == 'buyer' ? const Color(0xFF2575FC) : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Buyer",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: _selectedRole == 'buyer' ? FontWeight.bold : FontWeight.normal,
+                                              color: _selectedRole == 'buyer' ? const Color(0xFF2575FC) : Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: InkWell(
+                                    onTap: () => setState(() => _selectedRole = 'seller'),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: _selectedRole == 'seller' ? const Color(0xFF2575FC).withOpacity(0.1) : Colors.transparent,
+                                        border: Border.all(
+                                          color: _selectedRole == 'seller' ? const Color(0xFF2575FC) : Colors.grey.shade300,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.storefront_outlined,
+                                            size: 18,
+                                            color: _selectedRole == 'seller' ? const Color(0xFF2575FC) : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            "Seller",
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: _selectedRole == 'seller' ? FontWeight.bold : FontWeight.normal,
+                                              color: _selectedRole == 'seller' ? const Color(0xFF2575FC) : Colors.grey,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 16),
                             // Visible reCAPTCHA v2 Checkbox
                             RecaptchaV2Widget(
                               siteKey: "6LfHFYUrAAAAACVr6Xq3VHKv4VJlaYSJgQ9uWCQE", 

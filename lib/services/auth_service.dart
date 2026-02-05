@@ -140,6 +140,7 @@ class AuthService {
     required String email,
     required String password,
     String? recaptchaToken,
+    String role = 'buyer',
   }) async {
     try {
       final uri = Uri.parse('${AppConfig.backendBaseUrl}/api/auth/register/');
@@ -153,6 +154,7 @@ class AuthService {
           'email': email,
           'password': password,
           'recaptcha_token': recaptchaToken ?? '', 
+          'role': role,
         }),
       );
 

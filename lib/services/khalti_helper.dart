@@ -59,6 +59,7 @@ class KhaltiHelper {
             transactionId: pidx,
             buyNowProductId: productId,
             buyNowProductSku: sku,
+            qty: quantity,
           );
           debugPrint('✅ Order created successfully');
         } catch (e) {

@@ -37,6 +37,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final orderProvider = context.watch<OrderProvider>();
     final wishlistProvider = context.watch<WishlistProvider>();
 
+    debugPrint('🔍 ProfilePage: User = ${user?.email}, Role = ${user?.role}');
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: CustomScrollView(
@@ -203,17 +205,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       );
                     },
                   ),
-                  _MenuCard(
-                    icon: Icons.dashboard_outlined,
-                    title: 'Seller Dashboard',
-                    subtitle: 'Manage your products and sales',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const SellerDashboardPage()),
-                      );
-                    },
-                  ),
+                   if (user?.role == 'seller')
+                    _MenuCard(
+                      icon: Icons.dashboard_outlined,
+                      title: 'Seller Dashboard',
+                      subtitle: 'Manage your products and sales',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SellerDashboardPage()),
+                        );
+                      },
+                    ),
                   _MenuCard(
                     icon: Icons.favorite_border,
                     title: 'Wishlist',

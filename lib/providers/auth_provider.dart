@@ -100,6 +100,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     String? recaptchaToken,
+    String role = 'buyer',
   }) async {
     _isSignupLoading = true;
     notifyListeners();
@@ -109,6 +110,7 @@ class AuthProvider extends ChangeNotifier {
       email: email,
       password: password,
       recaptchaToken: recaptchaToken,
+      role: role,
     );
 
     _isSignupLoading = false;
@@ -162,6 +164,7 @@ class User {
   final String phoneNumber;
   final String firstName;
   final String lastName;
+  final String role;
 
   User({
     required this.id,
@@ -173,6 +176,7 @@ class User {
     this.phoneNumber = '',
     this.firstName = '',
     this.lastName = '',
+    this.role = 'buyer',
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -201,6 +205,7 @@ class User {
       name = 'User';
     }
 
+    debugPrint('📥 User.fromJson: parsing role from JSON: ${json['role']}');
     return User(
       id: json['id'] ?? 0,
       name: name,
@@ -211,6 +216,7 @@ class User {
       phoneNumber: json['phone_number']?.toString() ?? '',
       firstName: firstName,
       lastName: lastName,
+      role: json['role']?.toString() ?? 'buyer',
     );
   }
 }
