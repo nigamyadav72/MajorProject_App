@@ -141,7 +141,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                         ),
                       ),
                     )
-                  else
                     SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -151,6 +150,44 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
                         childCount: sellerProvider.myProducts.length,
                       ),
                     ),
+
+                  // Recent Orders Section
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Recent Sales',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          if (sellerProvider.sellerOrders.isEmpty)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child: Text('No recent sales yet', style: TextStyle(color: Colors.grey)),
+                              ),
+                            )
+                          else
+                            ListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: sellerProvider.sellerOrders.length,
+                              itemBuilder: (context, index) {
+                                final item = sellerProvider.sellerOrders[index];
+                                return _SellerOrderListItem(item: item);
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SliverToBoxAdapter(child: SizedBox(height: 32)),
                 ],
               ),
@@ -438,6 +475,88 @@ class _SellerActions extends StatelessWidget {
             child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SellerOrderListItem extends StatelessWidget {
+  final dynamic item; // SellerOrderItem
+  const _SellerOrderListItem({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade100)),
+      elevation: 0,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.product.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'SKU: ${item.product.sku}',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontFamily: 'monospace'),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.person_outline, size: 12, color: Colors.blueGrey),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.customerEmail,
+                        style: const TextStyle(fontSize: 11, color: Colors.blueGrey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Rs. ${item.price * item.quantity}',
+                  style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF10B981), fontSize: 16),
+                ),
+                Text(
+                  'Qty: ${item.quantity}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (item.orderStatus.toLowerCase() == 'ordered' || item.orderStatus.toLowerCase() == 'delivered') 
+                        ? Colors.green.withOpacity(0.1) 
+                        : Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    item.orderStatus.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: (item.orderStatus.toLowerCase() == 'ordered' || item.orderStatus.toLowerCase() == 'delivered') 
+                          ? Colors.green 
+                          : Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -10,6 +10,7 @@ import '../models/product.dart';
 import '../models/product_detail.dart';
 import '../models/category.dart';
 import '../models/order.dart';
+import '../models/seller_order_item.dart';
 
 class ApiService {
   static String get baseUrl => '${AppConfig.backendBaseUrl}/api';
@@ -459,6 +460,7 @@ class ApiService {
     required String shippingAddress,
     String? transactionId,
     String? buyNowProductId,
+    String? buyNowProductSku,
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/orders/');
@@ -470,6 +472,7 @@ class ApiService {
           'shipping_address': shippingAddress,
           if (transactionId != null) 'transaction_id': transactionId,
           if (buyNowProductId != null) 'buy_now_product_id': buyNowProductId,
+          if (buyNowProductSku != null) 'buy_now_product_sku': buyNowProductSku,
           'status': 'ordered',
         }),
       ).timeout(timeoutDuration);
@@ -663,9 +666,27 @@ class ApiService {
     }
   }
 
-  // ============================
-  // ✅ CLEANUP
-  // ============================
+  Future<List<SellerOrderItem>> fetchSellerOrders() async {
+    try {
+      final uri = Uri.parse('$baseUrl/orders/seller_orders/');
+      debugPrint('🚀 Fetch Seller Orders: $uri');
+      final response = await _client.get(
+        uri,
+        headers: await _getAuthHeaders(),
+      ).timeout(timeoutDuration);
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to fetch seller orders: ${response.statusCode}');
+      }
+
+      final List<dynamic> decoded = json.decode(response.body);
+      return decoded.map((e) => SellerOrderItem.fromJson(e)).toList();
+    } catch (e) {
+      debugPrint('Error fetching seller orders: $e');
+      rethrow;
+    }
+  }
+
   void dispose() {
     _client.close();
   }

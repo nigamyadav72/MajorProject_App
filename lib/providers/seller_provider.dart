@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../models/seller_order_item.dart';
 import '../services/api_service.dart';
 
 class SellerProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
   List<Product> _myProducts = [];
+  List<SellerOrderItem> _sellerOrders = [];
   Map<String, dynamic> _stats = {
     'totalProducts': 0,
     'liveProducts': 0,
@@ -18,6 +20,7 @@ class SellerProvider extends ChangeNotifier {
   String? _error;
 
   List<Product> get myProducts => _myProducts;
+  List<SellerOrderItem> get sellerOrders => _sellerOrders;
   Map<String, dynamic> get stats => _stats;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -31,10 +34,12 @@ class SellerProvider extends ChangeNotifier {
       final results = await Future.wait([
         _apiService.fetchSellerProducts(),
         _apiService.fetchSellerStats(),
+        _apiService.fetchSellerOrders(),
       ]);
 
       _myProducts = results[0] as List<Product>;
       _stats = results[1] as Map<String, dynamic>;
+      _sellerOrders = results[2] as List<SellerOrderItem>;
     } catch (e) {
       _error = e.toString();
     } finally {

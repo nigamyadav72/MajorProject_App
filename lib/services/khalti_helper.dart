@@ -17,6 +17,7 @@ class KhaltiHelper {
     required String productName,
     required double price,
     required int quantity,
+    String? sku,
   }) async {
     final auth = context.read<AuthProvider>();
     if (!auth.isAuthenticated) {
@@ -57,6 +58,7 @@ class KhaltiHelper {
                 : (auth.user?.email ?? 'TBD'),
             transactionId: pidx,
             buyNowProductId: productId,
+            buyNowProductSku: sku,
           );
           debugPrint('✅ Order created successfully');
         } catch (e) {

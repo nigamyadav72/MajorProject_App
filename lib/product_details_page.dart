@@ -681,6 +681,7 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       productName: _product.name,
       price: _product.price,
       quantity: _quantity,
+      sku: _product.sku,
     );
   }
 

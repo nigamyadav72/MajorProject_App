@@ -229,6 +229,11 @@ class _OrderCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                          if (item.product.sku.isNotEmpty)
+                            Text(
+                              'SKU: ${item.product.sku}',
+                              style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontFamily: 'monospace'),
+                            ),
                           const SizedBox(height: 2),
                           Text('Qty: ${item.quantity} × Rs. ${item.price}', 
                             style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
