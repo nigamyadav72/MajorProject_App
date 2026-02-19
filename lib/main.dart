@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:majorproject_app/login_screen.dart';
+import 'package:majorproject_app/screens/onboarding_screen.dart';
+
 import 'package:provider/provider.dart';
 
 import 'bottom_nav.dart';
@@ -36,24 +38,83 @@ class MyApp extends StatelessWidget {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
               home: Scaffold(
+                backgroundColor: const Color(0xFF0F172A),
                 body: Container(
+                  width: double.infinity,
+                  height: double.infinity,
                   decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                    gradient: RadialGradient(
+                      center: Alignment.center,
+                      radius: 0.8,
+                      colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
                     ),
                   ),
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.shopping_bag_outlined,
-                            size: 80, color: Colors.white),
-                        SizedBox(height: 24),
-                        CircularProgressIndicator(color: Colors.white),
-                      ],
-                    ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Spacer(flex: 3),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF6366F1).withOpacity(0.2),
+                            width: 2,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.shopping_bag_rounded,
+                          size: 80,
+                          color: Color(0xFF6366F1),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'E-Pasal',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                      const Text(
+                        'AI Shopping Assistant',
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const Spacer(flex: 2),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 60),
+                        child: Column(
+                          children: [
+                            const SizedBox(
+                              height: 4,
+                              child: LinearProgressIndicator(
+                                backgroundColor: Colors.white12,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(0xFF6366F1)),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Loading application...',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 60),
+                    ],
                   ),
                 ),
               ),
@@ -75,11 +136,16 @@ class MyApp extends StatelessWidget {
               scaffoldBackgroundColor: const Color(0xFFF8FAFC),
               fontFamily: 'Outfit', // A more modern font feel
               textTheme: const TextTheme(
-                headlineMedium: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+                headlineMedium: TextStyle(
+                    fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
                 bodyMedium: TextStyle(color: Color(0xFF475569)),
               ),
             ),
-            home: auth.isAuthenticated ? const BottomNav() : const LoginPage(),
+            home: auth.needsOnboarding
+                ? const OnboardingScreen()
+                : (auth.isAuthenticated
+                    ? const BottomNav()
+                    : const LoginPage()),
           );
         },
       ),

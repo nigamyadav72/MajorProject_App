@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -9,7 +11,10 @@ class AuthProvider extends ChangeNotifier {
   bool _isGoogleLoading = false;
   bool _isEmailLoading = false;
   bool _isSignupLoading = false;
+  bool _needsOnboarding = false;
   User? _user;
+
+  bool get needsOnboarding => _needsOnboarding;
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isInitialized => _isInitialized;
@@ -39,6 +44,8 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = false;
       _user = null;
     } finally {
+      final prefs = await SharedPreferences.getInstance();
+      _needsOnboarding = !(prefs.getBool('onboarding_complete') ?? false);
       _isInitialized = true;
       notifyListeners();
     }
@@ -151,6 +158,11 @@ class AuthProvider extends ChangeNotifier {
   // 🛠️ Test Connection Diagnostic
   Future<Map<String, dynamic>> testConnection() async {
     return await _authService.testConnection();
+  }
+
+  void completeOnboarding() {
+    _needsOnboarding = false;
+    notifyListeners();
   }
 }
 
