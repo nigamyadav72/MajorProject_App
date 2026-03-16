@@ -191,6 +191,7 @@ class _LoginPageState extends State<LoginPage> {
                                 onPressed: auth.isEmailLoading ? null : _handleEmailLogin,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2575FC),
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),

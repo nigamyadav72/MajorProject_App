@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
@@ -96,7 +97,7 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode != 200) {
         debugPrint("❌ Login Error Body: ${response.body}"); // ADDED THIS
@@ -125,6 +126,11 @@ class AuthService {
       return {
         'success': true,
         'user': data['user'],
+      };
+    } on TimeoutException {
+      return {
+        'success': false,
+        'error': 'Server not responding. Check your connection or try again.',
       };
     } catch (e) {
       return {
@@ -156,7 +162,7 @@ class AuthService {
           'recaptcha_token': recaptchaToken ?? '', 
           'role': role,
         }),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       debugPrint('📥 Registration response status: ${response.statusCode}');
       debugPrint('📥 Registration response body: ${response.body}');

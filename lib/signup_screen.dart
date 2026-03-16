@@ -289,6 +289,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                 onPressed: auth.isSignupLoading ? null : _handleSignUp,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF2575FC),
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
