@@ -55,7 +55,7 @@ class _IntroSplashScreenState extends State<IntroSplashScreen>
     // ── Phase 0: Logo ──
     _logoController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 700),
     );
     _logoScale = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _logoController, curve: Curves.easeOut),
@@ -67,7 +67,7 @@ class _IntroSplashScreenState extends State<IntroSplashScreen>
     // Logo pulse glow
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
     _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
@@ -76,55 +76,55 @@ class _IntroSplashScreenState extends State<IntroSplashScreen>
     // ── Phase 1: Letters ──
     _letterController = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: _brandName.length * 120 + 600),
+      duration: Duration(milliseconds: _brandName.length * 100 + 400),
     );
 
     _lineController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 800),
     );
 
     _taglineController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 500),
     );
 
     // ── Phase 2: Flash ──
     _flashController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 500),
     );
 
     _runSequence();
   }
 
   Future<void> _runSequence() async {
-    // Phase 0: Show logo — let it breathe
+    // Phase 0: Show logo (0ms → 1300ms)
     _logoController.forward();
-    await Future.delayed(const Duration(milliseconds: 2000));
+    await Future.delayed(const Duration(milliseconds: 1300));
 
-    // Transition to Phase 1
+    // Transition to Phase 1 (1300ms → 1500ms)
     if (!mounted) return;
     setState(() => _phase = 1);
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 200));
 
-    // Animate letters one by one
+    // Animate letters one by one (1500ms → 2500ms)
     _letterController.forward();
-    await Future.delayed(const Duration(milliseconds: 1400));
+    await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Animate gradient line
+    // Animate gradient line (2500ms → 3000ms)
     _lineController.forward();
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 500));
 
-    // Animate tagline
+    // Animate tagline (3000ms → 4000ms)
     _taglineController.forward();
-    await Future.delayed(const Duration(milliseconds: 1800));
+    await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Phase 2: Flash out
+    // Phase 2: Flash out (4000ms → 5000ms)
     if (!mounted) return;
     setState(() => _phase = 2);
     _flashController.forward();
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(const Duration(milliseconds: 700));
 
     // Complete — hand off to parent
     if (!mounted) return;
