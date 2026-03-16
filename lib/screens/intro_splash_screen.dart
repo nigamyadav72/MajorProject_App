@@ -1,17 +1,16 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:majorproject_app/providers/auth_provider.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+class IntroSplashScreen extends StatefulWidget {
+  final VoidCallback onComplete;
+
+  const IntroSplashScreen({super.key, required this.onComplete});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  State<IntroSplashScreen> createState() => _IntroSplashScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen>
+class _IntroSplashScreenState extends State<IntroSplashScreen>
     with TickerProviderStateMixin {
   int _phase = 0; // 0: Logo, 1: Text, 2: Flash out
 
@@ -127,17 +126,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     _flashController.forward();
     await Future.delayed(const Duration(milliseconds: 1000));
 
-    // Complete onboarding
+    // Complete — hand off to parent
     if (!mounted) return;
-    _completeOnboarding();
-  }
-
-  Future<void> _completeOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_complete', true);
-    if (mounted) {
-      Provider.of<AuthProvider>(context, listen: false).completeOnboarding();
-    }
+    widget.onComplete();
   }
 
   @override
@@ -182,14 +173,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           // ── Main Content ──
           Center(
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
+              duration: const Duration(milliseconds: 600),
               switchInCurve: Curves.easeOut,
               switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, animation) {
                 return FadeTransition(
                   opacity: animation,
                   child: ScaleTransition(
-                    scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+                    scale: Tween<double>(begin: 0.85, end: 1.0).animate(
                       CurvedAnimation(
                           parent: animation, curve: Curves.easeOut),
                     ),
@@ -201,7 +192,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ? _buildLogoPhase()
                   : _phase == 1
                       ? _buildTextPhase()
-                      : const SizedBox.shrink(),
+                      : const SizedBox.shrink(key: ValueKey('empty')),
             ),
           ),
 
@@ -289,10 +280,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(letters.length, (i) {
-              // Each letter has its own staggered animation
-              final letterStart = (i * 0.08) /
+              final letterStart = (i * 0.12) /
                   (_letterController.duration!.inMilliseconds / 1000);
-              final letterEnd = letterStart + 0.4;
+              final letterEnd = letterStart + 0.5;
               final letterAnimation = Tween<double>(begin: 0.0, end: 1.0)
                   .animate(CurvedAnimation(
                 parent: _letterController,
