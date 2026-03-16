@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:majorproject_app/login_screen.dart';
 import 'package:majorproject_app/screens/onboarding_screen.dart';
+import 'package:majorproject_app/screens/intro_splash_screen.dart';
 
 import 'package:provider/provider.dart';
 
@@ -17,11 +18,32 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _showSplash = true;
+
+  void _onSplashComplete() {
+    if (mounted) {
+      setState(() => _showSplash = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // If splash is still playing, show it as a standalone MaterialApp
+    if (_showSplash) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: IntroSplashScreen(onComplete: _onSplashComplete),
+      );
+    }
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
@@ -35,86 +57,15 @@ class MyApp extends StatelessWidget {
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (!auth.isInitialized) {
+            // Simple loading while auth checks after splash
             return MaterialApp(
               debugShowCheckedModeBanner: false,
               home: Scaffold(
-                backgroundColor: const Color(0xFF0F172A),
-                body: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  decoration: const BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: 0.8,
-                      colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Spacer(flex: 3),
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF6366F1).withOpacity(0.2),
-                            width: 2,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.shopping_bag_rounded,
-                          size: 80,
-                          color: Color(0xFF6366F1),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      const Text(
-                        'E-Pasal',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 42,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -1,
-                        ),
-                      ),
-                      const Text(
-                        'AI Shopping Assistant',
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const Spacer(flex: 2),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 60),
-                        child: Column(
-                          children: [
-                            const SizedBox(
-                              height: 4,
-                              child: LinearProgressIndicator(
-                                backgroundColor: Colors.white12,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(0xFF6366F1)),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Loading application...',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 60),
-                    ],
+                backgroundColor: const Color(0xFF050505),
+                body: Center(
+                  child: CircularProgressIndicator(
+                    color: const Color(0xFF6366F1),
+                    strokeWidth: 3,
                   ),
                 ),
               ),
@@ -130,11 +81,10 @@ class MyApp extends StatelessWidget {
                 primary: const Color(0xFF6366F1),
                 secondary: const Color(0xFF06B6D4),
                 surface: Colors.white,
-                // background property is deprecated
                 brightness: Brightness.light,
               ),
               scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-              fontFamily: 'Outfit', // A more modern font feel
+              fontFamily: 'Outfit',
               textTheme: const TextTheme(
                 headlineMedium: TextStyle(
                     fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
