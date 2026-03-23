@@ -55,7 +55,7 @@ class _RecaptchaV2WidgetState extends State<RecaptchaV2Widget> {
           widget.onVerified(message.message);
         },
       )
-      ..loadHtmlString(_buildHtml(), baseUrl: "https://localhost");
+      ..loadHtmlString(_buildHtml(), baseUrl: "https://majorproject-deployment-2hsxl.ondigitalocean.app");
   }
 
   String _buildHtml() {

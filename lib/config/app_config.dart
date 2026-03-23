@@ -11,11 +11,11 @@ class AppConfig {
   // static const String backendBaseUrl = 'http://192.168.10.129:8000';
   // static const String modelServerUrl = 'http://192.168.10.129:8001';
   /// this is for the Android emulator (10.0.2.2 = host machine localhost)
-  static const String backendBaseUrl = 'http://10.0.2.2:8000';
-  static const String modelServerUrl = 'http://10.0.2.2:8001';
-  //this is for the normal run using usb debugging (iOS sim or same machine)
-  // static const String backendBaseUrl = 'http://localhost:8000';
-  // static const String modelServerUrl = 'http://localhost:8001';
+  static const String backendBaseUrl = 'https://majorproject-deployment-2hsxl.ondigitalocean.app';
+
+  // Note: if your model server is deployed as a separate component or route, 
+  // you may need to update this URL accordingly (e.g., append a path or use a different component URL)
+  static const String modelServerUrl = 'https://majorproject-deployment-2hsxl.ondigitalocean.app';
 
   /// Google OAuth **Web** Client ID — must match Django SocialApp (Google).
   /// Used as serverClientId for backend verification (Android & iOS).

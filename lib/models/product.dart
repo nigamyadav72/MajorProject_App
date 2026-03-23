@@ -39,7 +39,7 @@ class Product {
       price: (json['price'] is num)
           ? (json['price'] as num).toDouble()
           : double.tryParse(json['price']?.toString() ?? '0') ?? 0,
-      imageUrl: json['image']?.toString() ?? '',
+      imageUrl: json['image_url']?.toString() ?? json['image']?.toString() ?? '',
       categories: [json['category_name']?.toString() ?? ''],
       rating: (json['rating_average'] is num)
           ? (json['rating_average'] as num).toDouble()
