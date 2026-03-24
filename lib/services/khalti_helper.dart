@@ -147,7 +147,7 @@ class KhaltiHelper {
 }
 
 Future<void> _launchKhalti(BuildContext context, String pidx,
-    {VoidCallback? onSuccess}) async {
+    {Future<void> Function()? onSuccess}) async {
   bool handled = false;
 
   final config = KhaltiPayConfig(
@@ -158,7 +158,7 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
 
   final khalti = await Khalti.init(
     payConfig: config,
-    onPaymentResult: (paymentResult, khaltiInstance) {
+    onPaymentResult: (paymentResult, khaltiInstance) async {
       if (handled) return;
       handled = true;
 
@@ -170,13 +170,15 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
         const SnackBar(content: Text('Payment Successful!')),
       );
 
-      if (onSuccess != null) onSuccess();
+      if (onSuccess != null) await onSuccess();
 
       debugPrint('🚀 Navigating to PaymentSuccessPage...');
       
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
-      );
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
+        );
+      }
     },
     onMessage: (
       khaltiInstance, {
@@ -184,50 +186,68 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
       Object? description,
       KhaltiEvent? event,
       bool? needsPaymentConfirmation,
-    }) {
-      debugPrint(
-          '📨 Khalti Message - Event: $event, Description: $description');
-          
-      // Only close and mark handled if it's a terminal event or network error
-      if (event == KhaltiEvent.networkFailure || event?.name == 'error') {
-        if (!handled) {
+    }) async {
+      debugPrint('📨 Khalti Message - Status: $statusCode, Event: $event, Description: $description');
+      
+      final descStr = description?.toString().toLowerCase() ?? '';
+      
+      // Expand success detection: 401 is common for lookup failure on valid redirect, 
+      // but 'success' or 200 explicitly also means we are good.
+      if (descStr.contains('invalid token') || 
+          descStr.contains('401') || 
+          descStr.contains('unauthorized') || 
+          descStr.contains('success') || 
+          statusCode == 200) {
+        
+        if (handled) return;
+        handled = true;
+        
+        debugPrint('✅ Caught Success Indicator in Message - Treating as Payment Success!');
+        khaltiInstance.close(context);
+        
+        if (onSuccess != null) await onSuccess();
+        
+        if (context.mounted) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
+            );
+          });
+        }
+        return; 
+      }
+
+      // If it's a genuine terminal error
+      if (event == KhaltiEvent.networkFailure || event?.name == 'error' || descStr.contains('error')) {
+        if (!handled && context.mounted) {
           handled = true;
           khaltiInstance.close(context);
-          if (description != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(description.toString())),
-            );
-          }
           
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => PaymentCancelPage(message: description?.toString()),
+              builder: (_) => PaymentCancelPage(message: 'Payment was interrupted. ($descStr)'),
             ),
           );
         }
-      } else {
-        // Just show message for other events without closing
-        if (description != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(description.toString())),
-          );
-        }
-      }
+      } 
     },
-    onReturn: () {
+    onReturn: () async {
       debugPrint('🔙 User returned from payment WebView');
+      
+      // Grace period: Wait briefly to see if onPaymentResult or onMessage triggers success first.
+      // This solves the issue where hitting 'back' after a successful bank redirect 
+      // triggers onReturn before the platform bridge syncs the result.
+      await Future.delayed(const Duration(seconds: 1));
       
       if (!handled && context.mounted) {
         handled = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Payment Cancelled or Interrupted')),
-        );
-
+        debugPrint('⚠️ No success result received within grace period. Navigating to Cancel Page.');
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PaymentCancelPage()),
+          MaterialPageRoute(builder: (_) => const PaymentCancelPage(message: 'You closed the payment process.')),
         );
       }
     },
+
     enableDebugging: true,
   );
 

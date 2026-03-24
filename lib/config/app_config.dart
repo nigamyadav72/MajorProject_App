@@ -15,7 +15,7 @@ class AppConfig {
 
   // Note: if your model server is deployed as a separate component or route, 
   // you may need to update this URL accordingly (e.g., append a path or use a different component URL)
-  static const String modelServerUrl = 'https://majorproject-deployment-2hsxl.ondigitalocean.app';
+  static const String modelServerUrl = 'https://nigamyadav72-ecommerce-image-search.hf.space';
 
   /// Google OAuth **Web** Client ID — must match Django SocialApp (Google).
   /// Used as serverClientId for backend verification (Android & iOS).
