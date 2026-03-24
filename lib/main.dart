@@ -26,51 +26,37 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _showSplash = true;
+  bool _splashFinished = false;
 
-  void _onSplashComplete() {
+  void _onSplashFinished() {
     if (mounted) {
-      setState(() => _showSplash = false);
+      setState(() => _splashFinished = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // If splash is still playing, show it as a standalone MaterialApp
-    if (_showSplash) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: IntroSplashScreen(onComplete: _onSplashComplete),
-      );
-    }
-
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()..checkAuth()),
-        ChangeNotifierProvider(create: (_) => CartProvider()),
-        ChangeNotifierProvider(create: (_) => WishlistProvider()),
-        ChangeNotifierProvider(create: (_) => ProductProvider()),
-        ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        ChangeNotifierProvider(create: (_) => OrderProvider()),
-        ChangeNotifierProvider(create: (_) => SellerProvider()),
+        ChangeNotifierProvider(create: (context) => AuthProvider()..checkAuth()),
+        ChangeNotifierProvider(create: (context) => CartProvider()..fetchCart()),
+        ChangeNotifierProvider(create: (context) => WishlistProvider()..fetchWishlist()),
+        ChangeNotifierProvider(create: (context) => ProductProvider()..fetchProducts()..fetchCategories()),
+        ChangeNotifierProvider(create: (context) => NavigationProvider()),
+        ChangeNotifierProvider(create: (context) => OrderProvider()),
+        ChangeNotifierProvider(create: (context) => SellerProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, auth, _) {
-          if (!auth.isInitialized) {
-            // Simple loading while auth checks after splash
+          // If animations aren't done OR auth isn't initialized, show splash
+          if (!_splashFinished || !auth.isInitialized) {
             return MaterialApp(
               debugShowCheckedModeBanner: false,
-              home: Scaffold(
-                backgroundColor: const Color(0xFF050505),
-                body: Center(
-                  child: CircularProgressIndicator(
-                    color: const Color(0xFF6366F1),
-                    strokeWidth: 3,
-                  ),
-                ),
-              ),
+              home: IntroSplashScreen(onComplete: _onSplashFinished),
             );
           }
+
+          // Once BOTH are ready, show the main app
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'E-Pasal',
@@ -93,12 +79,20 @@ class _MyAppState extends State<MyApp> {
             ),
             home: auth.needsOnboarding
                 ? const OnboardingScreen()
-                : (auth.isAuthenticated
-                    ? const BottomNav()
-                    : const LoginPage()),
+                : (auth.isAuthenticated ? const BottomNav() : const LoginPageThemeWrapper()),
           );
         },
       ),
     );
+  }
+}
+
+// Simple wrapper to ensure LoginPage gets the right theme if needed
+class LoginPageThemeWrapper extends StatelessWidget {
+  const LoginPageThemeWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const LoginPage();
   }
 }

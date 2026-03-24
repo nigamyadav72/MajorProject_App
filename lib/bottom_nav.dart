@@ -29,8 +29,6 @@ class _BottomNavState extends State<BottomNav> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<NavigationProvider>().setIndex(widget.initialIndex);
-      context.read<CartProvider>().fetchCart();
-      context.read<WishlistProvider>().fetchWishlist();
     });
   }
 

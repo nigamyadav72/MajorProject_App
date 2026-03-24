@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../services/api_service.dart';
 import '../screens/payment_success_page.dart';
+import '../screens/payment_cancel_page.dart';
 
 class KhaltiHelper {
   final ApiService _api = ApiService();
@@ -147,6 +148,8 @@ class KhaltiHelper {
 
 Future<void> _launchKhalti(BuildContext context, String pidx,
     {VoidCallback? onSuccess}) async {
+  bool handled = false;
+
   final config = KhaltiPayConfig(
     publicKey: 'test_public_key_dc74e0d5440a45d098e984f4dc15dc35',
     pidx: pidx,
@@ -156,7 +159,12 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
   final khalti = await Khalti.init(
     payConfig: config,
     onPaymentResult: (paymentResult, khaltiInstance) {
+      if (handled) return;
+      handled = true;
+
       debugPrint('✅ Khalti Payment Result Received: $paymentResult');
+      
+      khaltiInstance.close(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Payment Successful!')),
@@ -165,6 +173,7 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
       if (onSuccess != null) onSuccess();
 
       debugPrint('🚀 Navigating to PaymentSuccessPage...');
+      
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
       );
@@ -178,24 +187,44 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
     }) {
       debugPrint(
           '📨 Khalti Message - Event: $event, Description: $description');
-
-      if (description != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(description.toString())),
-        );
+          
+      // Only close and mark handled if it's a terminal event or network error
+      if (event == KhaltiEvent.networkFailure || event?.name == 'error') {
+        if (!handled) {
+          handled = true;
+          khaltiInstance.close(context);
+          if (description != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(description.toString())),
+            );
+          }
+          
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => PaymentCancelPage(message: description?.toString()),
+            ),
+          );
+        }
+      } else {
+        // Just show message for other events without closing
+        if (description != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(description.toString())),
+          );
+        }
       }
     },
     onReturn: () {
       debugPrint('🔙 User returned from payment WebView');
       
-      // Navigate to success page as safety fallback
-      // (in case onPaymentResult doesn't fire)
-      // The SDK closes the WebView automatically when this callback is triggered
-      if (context.mounted) {
-        if (onSuccess != null) onSuccess();
-        
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
+      if (!handled && context.mounted) {
+        handled = true;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Payment Cancelled or Interrupted')),
+        );
+
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const PaymentCancelPage()),
         );
       }
     },

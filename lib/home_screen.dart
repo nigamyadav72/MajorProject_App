@@ -55,11 +55,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = Provider.of<ProductProvider>(context, listen: false);
-      provider.fetchProducts();
-      provider.fetchCategories();
-    });
   }
 
   @override
