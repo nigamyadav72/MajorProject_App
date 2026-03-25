@@ -187,18 +187,6 @@ Future<void> _launchKhalti(
       }
     },
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // onMessage: fires for every SDK event — including the 401 that Khalti
-    // test environment sends right after a successful payment.
-    //
-    // We do NOT navigate here. Instead we just set the paymentCompleted flag
-    // when we detect a success indicator. onReturn will do the actual routing.
-    //
-    // Why not navigate here? Because this callback fires BEFORE the WebView
-    // has closed. Navigating while the WebView is still open causes the
-    // Cancel page to flash on top of the WebView, and then onReturn fires
-    // afterward and navigates again → two conflicting navigations.
-    // ─────────────────────────────────────────────────────────────────────────
     onMessage: (
       khaltiInstance, {
       int? statusCode,
@@ -213,87 +201,24 @@ Future<void> _launchKhalti(
 
       final descStr = description?.toString().toLowerCase() ?? '';
 
-      // ── Explicit user cancellation ─────────────────────────────────────────
-      // paymentLookupfailure fires when user taps "Cancel" inside the Khalti UI.
-      final isExplicitCancel =
-          event == KhaltiEvent.paymentLookupfailure ||
-          descStr.contains('user cancel') ||
-          descStr.contains('payment cancel') ||
-          descStr.contains('cancelled by user');
-
-      if (isExplicitCancel) {
-        navigated = true;
-        paymentCompleted = false;
-        khaltiInstance.close(context);
-        debugPrint('🚫 User explicitly cancelled the payment.');
-
-        if (context.mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const PaymentCancelPage(
-                message: 'Payment was cancelled.',
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
       // ── TEST ENVIRONMENT SUCCESS INDICATOR ─────────────────────────────────
-      // In Khalti's test environment, after a successful payment the WebView
-      // shows "Payment Successful!" and simultaneously fires onMessage with
-      // statusCode 401 / "Invalid token". This is because Khalti's servers
-      // try to call your backend's return URL and receive a 401 back.
-      // This does NOT mean the payment failed — the payment IS complete.
-      // We mark paymentCompleted = true here so onReturn knows to route to
-      // the success page once the WebView finishes closing itself.
       final isTestEnvSuccessSignal =
           statusCode == 401 ||
           descStr.contains('invalid token') ||
           descStr.contains('unauthorized') ||
           statusCode == 200 ||
-          descStr.contains('success');
+          descStr.contains('success') ||
+          event == KhaltiEvent.paymentLookupfailure;
 
       if (isTestEnvSuccessSignal) {
-        debugPrint(
-            '🟡 Test-env success signal detected (status $statusCode). '
-            'Marking paymentCompleted=true. Will navigate in onReturn.');
+        debugPrint('🟡 Test-env success signal detected (status $statusCode).');
+        
         paymentCompleted = true;
-        // Do NOT navigate yet — the WebView is still open. Let it auto-close
-        // and onReturn will handle the navigation cleanly.
-        return;
-      }
-
-      debugPrint('ℹ️ Non-actionable message — ignoring.');
-    },
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // onReturn: fires when the Khalti WebView fully closes (both on success
-    // auto-close AND when user manually presses back).
-    //
-    // By this point onMessage has already run and set paymentCompleted.
-    // We use that flag to decide where to navigate.
-    // ─────────────────────────────────────────────────────────────────────────
-    onReturn: () async {
-      debugPrint(
-          '🔙 onReturn — WebView closed | paymentCompleted=$paymentCompleted | navigated=$navigated');
-
-      // Brief pause so onPaymentResult (production path) can fire first if
-      // it arrives just after onReturn.
-      await Future.delayed(const Duration(milliseconds: 600));
-
-      if (navigated) {
-        // Already handled by onPaymentResult or explicit cancel in onMessage.
-        debugPrint('ℹ️ Already navigated — skipping onReturn routing.');
-        return;
-      }
-
-      navigated = true;
-
-      if (paymentCompleted) {
-        // Payment succeeded (test-env 401 signal was received).
-        debugPrint('✅ Payment completed — navigating to PaymentSuccessPage.');
-
+        navigated = true;
+        
+        // Explicitly close Khalti BEFORE we navigate so its auto-close doesn't pop our success page!
+        khaltiInstance.close(context);
+        
         if (onSuccess != null) await onSuccess();
 
         if (context.mounted) {
@@ -301,19 +226,37 @@ Future<void> _launchKhalti(
             MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
           );
         }
-      } else {
-        // User closed the WebView without paying.
-        debugPrint('⚠️ Payment NOT completed — navigating to PaymentCancelPage.');
+        
+        return;
+      }
 
-        if (context.mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (_) => const PaymentCancelPage(
-                message: 'You closed the payment without completing it.',
-              ),
+      debugPrint('ℹ️ Non-actionable message — ignoring.');
+    },
+
+    onReturn: () async {
+      debugPrint('🔙 onReturn — WebView closed');
+
+      // If user hit 'back' without paying, onMessage never fired a success signal.
+      // We will wait briefly just in case the success signal is still coming.
+      await Future.delayed(const Duration(milliseconds: 2000));
+
+      if (navigated) {
+        debugPrint('ℹ️ Already navigated — skipping onReturn routing.');
+        return;
+      }
+
+      // If we made it here, no success signal ever arrived.
+      navigated = true;
+      debugPrint('⚠️ Payment NOT completed — navigating to PaymentCancelPage.');
+
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const PaymentCancelPage(
+              message: 'You closed the payment without completing it.',
             ),
-          );
-        }
+          ),
+        );
       }
     },
 
