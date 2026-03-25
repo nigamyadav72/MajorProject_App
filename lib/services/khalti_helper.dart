@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:khalti_checkout_flutter/khalti_checkout_flutter.dart';
 import 'package:provider/provider.dart';
@@ -153,38 +154,20 @@ class KhaltiHelper {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// HOW THE KHALTI SDK WORKS IN TEST ENVIRONMENT:
-//
-//  From the device logs we can see the EXACT firing order:
-//
-//  1. User pays → Khalti shows "Payment Successful! Auto-closing..."
-//  2. onReturn fires FIRST  ← WebView starts closing
-//  3. onMessage fires AFTER ← status 401 / KhaltiEvent.paymentLookupfailure
-//
-//  This means onReturn always arrives BEFORE the 401 success signal from
-//  onMessage. The 500ms grace delay was not enough — the 401 onMessage can
-//  arrive well after onReturn fires.
-//
-//  ROOT CAUSE OF REMAINING BUG:
-//  The grace delay in onReturn was only 500ms, but logs show onMessage fires
-//  AFTER onReturn completes, so paymentCompleted was always false when
-//  onReturn checked it, always routing to PaymentCancelPage.
-//
-//  FINAL FIX:
-//  - Always wait the full grace delay (2000ms) in onReturn regardless of
-//    paymentCompleted's current value — because onMessage always arrives late.
-//  - After the delay, check paymentCompleted. By then onMessage will have
-//    already fired and set the flag to true if payment was successful.
-//  - If user genuinely cancelled (pressed back), onMessage never fires the
-//    401 signal, so paymentCompleted stays false → correctly go to cancel page.
+// Uses a Completer to synchronize onReturn and onMessage:
+//   - onMessage fires when Khalti sends the 401 test-env success signal
+//     → completes the Completer with true.
+//   - onReturn fires when the WebView closes → shows a loading dialog
+//     ("Verifying payment…") → awaits the Completer with a 10s timeout.
+//   - Once the Completer resolves, we dismiss the dialog and navigate.
 // ═══════════════════════════════════════════════════════════════════════════════
 Future<void> _launchKhalti(
   BuildContext context,
   String pidx, {
   Future<void> Function()? onSuccess,
 }) async {
-  bool navigated = false;        // ensures we navigate exactly once
-  bool paymentCompleted = false; // true when we see a Khalti success signal
+  bool navigated = false;
+  final paymentCompleter = Completer<bool>();
 
   final config = KhaltiPayConfig(
     publicKey: 'test_public_key_dc74e0d5440a45d098e984f4dc15dc35',
@@ -195,17 +178,16 @@ Future<void> _launchKhalti(
   final khalti = await Khalti.init(
     payConfig: config,
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // onPaymentResult: fires in production. Handled as a safety net.
-    // We close + navigate directly here since this is a reliable signal.
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── PRODUCTION SUCCESS (safety net) ────────────────────────────────────
     onPaymentResult: (paymentResult, khaltiInstance) async {
       if (navigated) return;
       navigated = true;
-      paymentCompleted = true;
 
       debugPrint('✅ onPaymentResult — Payment confirmed: $paymentResult');
       khaltiInstance.close(context);
+
+      // Complete the Completer so onReturn (if still waiting) knows.
+      if (!paymentCompleter.isCompleted) paymentCompleter.complete(true);
 
       if (onSuccess != null) await onSuccess();
 
@@ -216,16 +198,9 @@ Future<void> _launchKhalti(
       }
     },
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // onMessage: ONLY sets the paymentCompleted flag.
-    //
-    // From device logs: onMessage fires AFTER onReturn in test environment.
-    // So we must NEVER navigate here — just set the flag and let onReturn
-    // read it after its grace delay has elapsed.
-    //
-    // Also do NOT call khaltiInstance.close() here — that would re-trigger
-    // onReturn and cause a second navigation attempt.
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── TEST-ENV SUCCESS SIGNAL ────────────────────────────────────────────
+    // Just completes the Completer — does NOT navigate.
+    // Navigation is handled by onReturn after the loading dialog.
     onMessage: (
       khaltiInstance, {
       int? statusCode,
@@ -236,14 +211,9 @@ Future<void> _launchKhalti(
       debugPrint(
           '📨 onMessage — status: $statusCode | event: $event | desc: $description');
 
-      if (navigated) return;
-
       final descStr = description?.toString().toLowerCase() ?? '';
 
-      // ── TEST ENVIRONMENT SUCCESS INDICATOR ─────────────────────────────────
-      // 401 / "invalid token" = Khalti server hit your backend return URL and
-      // got a 401 back. This is NOT a payment failure — it IS the success signal.
-      final isTestEnvSuccessSignal =
+      final isSuccessSignal =
           statusCode == 401 ||
           statusCode == 200 ||
           descStr.contains('invalid token') ||
@@ -251,76 +221,96 @@ Future<void> _launchKhalti(
           descStr.contains('success') ||
           event == KhaltiEvent.paymentLookupfailure;
 
-      if (isTestEnvSuccessSignal) {
-        debugPrint(
-            '🟡 Test-env success signal detected (status: $statusCode). '
-            'Setting paymentCompleted=true.');
-        // ✅ Only set the flag — onReturn will read this after its grace delay.
-        paymentCompleted = true;
-      } else {
-        debugPrint('ℹ️ Non-actionable message — ignoring.');
+      if (isSuccessSignal && !paymentCompleter.isCompleted) {
+        debugPrint('🟡 Success signal detected — completing Completer.');
+        paymentCompleter.complete(true);
       }
     },
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // onReturn: the SINGLE navigation point for both success and cancel.
-    //
-    // CONFIRMED from device logs:
-    //   onReturn fires FIRST, then onMessage fires with the 401 signal.
-    //
-    // Therefore we ALWAYS wait the full 2000ms grace delay before checking
-    // paymentCompleted — this ensures onMessage has had time to set the flag.
-    //
-    //   paymentCompleted == true  → go to PaymentSuccessPage
-    //   paymentCompleted == false → go to PaymentCancelPage (user backed out)
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── WEBVIEW CLOSED ────────────────────────────────────────────────────
+    // Shows a loading buffer dialog immediately, then waits for the
+    // Completer (which onMessage will complete when the 401 arrives).
     onReturn: () async {
-      debugPrint(
-          '🔙 onReturn fired — waiting for onMessage grace period...');
+      debugPrint('🔙 onReturn fired — showing loading buffer.');
 
-      // ✅ Fast bail-out if onPaymentResult already handled navigation.
+      // If onPaymentResult already navigated, nothing to do.
       if (navigated) {
-        debugPrint('ℹ️ Already navigated (onPaymentResult ran) — skipping.');
+        debugPrint('ℹ️ Already navigated — skipping.');
         return;
       }
 
-      // ✅ ALWAYS wait the full grace period.
-      // Logs confirm onMessage fires AFTER onReturn, so we must wait for it.
-      // 2000ms is enough for onMessage to arrive and set paymentCompleted=true.
-      await Future.delayed(const Duration(milliseconds: 2000));
+      // Show a loading dialog as the "buffer" screen.
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          barrierColor: Colors.white,
+          builder: (_) => const PopScope(
+            canPop: false,
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        color: Colors.black,
+                      ),
+                    ),
+                    SizedBox(height: 24),
+                    Text(
+                      'Verifying payment...',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }
 
-      // Re-check after grace delay in case onPaymentResult raced in.
+      // Wait for the success signal with a 10s timeout.
+      final success = await paymentCompleter.future
+          .timeout(const Duration(seconds: 10), onTimeout: () => false);
+
+      debugPrint('🔙 Completer resolved: success=$success');
+
+      // If onPaymentResult already navigated while we were waiting, bail out.
       if (navigated) {
-        debugPrint('ℹ️ Already navigated after grace delay — skipping.');
+        if (context.mounted) Navigator.of(context).pop(); // dismiss dialog
+        debugPrint('ℹ️ Already navigated — dismissing dialog only.');
         return;
       }
 
-      // Lock navigation now.
       navigated = true;
 
-      debugPrint(
-          '🔙 onReturn — grace period done. paymentCompleted: $paymentCompleted');
+      // Dismiss the loading dialog.
+      if (context.mounted) Navigator.of(context).pop();
 
-      if (paymentCompleted) {
-        // ── SUCCESS PATH ───────────────────────────────────────────────────
-        debugPrint('✅ Payment completed — running onSuccess callback...');
+      if (success) {
+        debugPrint('✅ Payment verified — running onSuccess + navigating.');
         if (onSuccess != null) await onSuccess();
 
-        debugPrint('✅ Navigating to PaymentSuccessPage.');
         if (context.mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
           );
         }
       } else {
-        // ── CANCEL PATH ────────────────────────────────────────────────────
-        // onMessage never fired a success signal, so user backed out.
-        debugPrint(
-            '⚠️ Payment NOT completed — showing SnackBar instead of cancel page.');
+        debugPrint('⚠️ Payment not completed within timeout.');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Payment cancelled.'),
+              content: Text('Payment was not completed.'),
               duration: Duration(seconds: 3),
             ),
           );
