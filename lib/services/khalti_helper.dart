@@ -29,7 +29,6 @@ class KhaltiHelper {
     }
 
     try {
-      // 1. Initiate Payment
       debugPrint('🚀 Initiating Buy Now payment for $productName at ₹$price x $quantity');
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
@@ -38,8 +37,6 @@ class KhaltiHelper {
         amount: price * quantity,
         productId: productId,
         productName: productName,
-        // Note: Mobile SDK uses onPaymentResult callback, doesn't redirect to these URLs
-        // These are for web compatibility and Khalti API validation
         returnUrl: '${AppConfig.backendBaseUrl}/api/payment/success/',
         websiteUrl: AppConfig.backendBaseUrl,
       );
@@ -47,15 +44,13 @@ class KhaltiHelper {
       final pidx = data['pidx'];
       if (pidx == null) throw Exception('No pidx returned');
 
-      // 2. Launch SDK
       if (!context.mounted) return;
       await _launchKhalti(context, pidx, onSuccess: () async {
-        // Create order on backend for Buy Now (single product)
         try {
           debugPrint('📦 Creating Buy Now order on backend...');
           await _api.createOrder(
-            shippingAddress: auth.user?.address.isNotEmpty == true 
-                ? auth.user!.address 
+            shippingAddress: auth.user?.address.isNotEmpty == true
+                ? auth.user!.address
                 : (auth.user?.email ?? 'TBD'),
             transactionId: pidx,
             buyNowProductId: productId,
@@ -91,7 +86,6 @@ class KhaltiHelper {
     }
 
     try {
-      // 1. Initiate
       debugPrint('🚀 Initiating Cart checkout for ₹${cart.totalPrice}');
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
@@ -100,8 +94,6 @@ class KhaltiHelper {
         amount: cart.totalPrice,
         productId: 'cart_order_${DateTime.now().millisecondsSinceEpoch}',
         productName: 'Cart Checkout',
-        // Note: Mobile SDK uses onPaymentResult callback, doesn't redirect to these URLs
-        // These are for web compatibility and Khalti API validation
         returnUrl: '${AppConfig.backendBaseUrl}/api/payment/success/',
         websiteUrl: AppConfig.backendBaseUrl,
       );
@@ -109,26 +101,21 @@ class KhaltiHelper {
       final pidx = data['pidx'];
       if (pidx == null) throw Exception('No pidx returned');
 
-      // 2. Launch SDK
       if (!context.mounted) return;
       await _launchKhalti(context, pidx, onSuccess: () async {
-        // Create order on backend after successful payment
         try {
           debugPrint('📦 Creating order on backend...');
           await _api.createOrder(
-            shippingAddress: auth.user?.address.isNotEmpty == true 
-                ? auth.user!.address 
+            shippingAddress: auth.user?.address.isNotEmpty == true
+                ? auth.user!.address
                 : (auth.user?.email ?? 'TBD'),
             transactionId: pidx,
           );
           debugPrint('✅ Order created successfully');
-          
-          // Clear cart after order is created
           await cart.clearCart();
           debugPrint('🛒 Cart cleared');
         } catch (e) {
           debugPrint('❌ Error creating order: $e');
-          // Don't block the flow, still clear cart and show success
           await cart.clearCart();
         }
       });
@@ -146,8 +133,12 @@ class KhaltiHelper {
   }
 }
 
-Future<void> _launchKhalti(BuildContext context, String pidx,
-    {Future<void> Function()? onSuccess}) async {
+Future<void> _launchKhalti(
+  BuildContext context,
+  String pidx, {
+  Future<void> Function()? onSuccess,
+}) async {
+  // Single flag to ensure we only navigate once.
   bool handled = false;
 
   final config = KhaltiPayConfig(
@@ -158,28 +149,41 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
 
   final khalti = await Khalti.init(
     payConfig: config,
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SUCCESS — this is the ONLY reliable success signal from the SDK.
+    // It fires when Khalti confirms the transaction on their servers.
+    // ─────────────────────────────────────────────────────────────────────
     onPaymentResult: (paymentResult, khaltiInstance) async {
       if (handled) return;
       handled = true;
 
-      debugPrint('✅ Khalti Payment Result Received: $paymentResult');
-      
+      debugPrint('✅ onPaymentResult — Payment confirmed: $paymentResult');
+
       khaltiInstance.close(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment Successful!')),
-      );
-
+      // Run any post-payment work (create order, clear cart, etc.)
       if (onSuccess != null) await onSuccess();
 
-      debugPrint('🚀 Navigating to PaymentSuccessPage...');
-      
+      debugPrint('🚀 Navigating → PaymentSuccessPage');
+
       if (context.mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
         );
       }
     },
+
+    // ─────────────────────────────────────────────────────────────────────
+    // MESSAGES — informational / error events from the WebView.
+    //
+    // ⚠️  IMPORTANT — Do NOT treat 401 / "invalid token" / "unauthorized"
+    //   as a success here.  Those are normal Khalti TEST-environment
+    //   lookup errors that fire on EVERY payment attempt.  The payment
+    //   may still be completing.  Treating them as success caused the
+    //   old race-condition bug where this callback fired before the real
+    //   result arrived and routed the user to the wrong page.
+    // ─────────────────────────────────────────────────────────────────────
     onMessage: (
       khaltiInstance, {
       int? statusCode,
@@ -187,63 +191,67 @@ Future<void> _launchKhalti(BuildContext context, String pidx,
       KhaltiEvent? event,
       bool? needsPaymentConfirmation,
     }) async {
-      debugPrint('📨 Khalti Message - Status: $statusCode, Event: $event, Description: $description');
-      
-      final descStr = description?.toString().toLowerCase() ?? '';
-      
-      // Expand success detection: 401 is common for lookup failure on valid redirect, 
-      // but 'success' or 200 explicitly also means we are good.
-      if (descStr.contains('invalid token') || 
-          descStr.contains('401') || 
-          descStr.contains('unauthorized') || 
-          descStr.contains('success') || 
-          statusCode == 200) {
-        
-        if (handled) return;
-        handled = true;
-        
-        debugPrint('✅ Caught Success Indicator in Message - Treating as Payment Success!');
-        khaltiInstance.close(context);
-        
-        if (onSuccess != null) await onSuccess();
-        
-        if (context.mounted) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
-            );
-          });
-        }
-        return; 
-      }
+      debugPrint(
+          '📨 onMessage — status: $statusCode | event: $event | desc: $description');
 
-      // If it's a genuine terminal error
-      if (event == KhaltiEvent.networkFailure || event?.name == 'error' || descStr.contains('error')) {
-        if (!handled && context.mounted) {
-          handled = true;
-          khaltiInstance.close(context);
-          
-          Navigator.of(context).push(
+      if (handled) return;
+
+      final descStr = description?.toString().toLowerCase() ?? '';
+
+      // Only navigate to cancel when the user explicitly cancels.
+      final isExplicitCancel =
+          event == KhaltiEvent.paymentLookupfailure ||
+          descStr.contains('user cancel') ||
+          descStr.contains('payment cancel') ||
+          descStr.contains('cancelled by user');
+
+      if (isExplicitCancel) {
+        handled = true;
+        khaltiInstance.close(context);
+
+        debugPrint('🚫 Explicit cancellation detected → PaymentCancelPage');
+
+        if (context.mounted) {
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (_) => PaymentCancelPage(message: 'Payment was interrupted. ($descStr)'),
+              builder: (_) => const PaymentCancelPage(
+                message: 'Payment was cancelled.',
+              ),
             ),
           );
         }
-      } 
+        return;
+      }
+
+      // Everything else (401, network glitches, informational messages) →
+      // just log it.  onPaymentResult will handle the success navigation.
+      debugPrint('ℹ️  Non-terminal message received — no navigation.');
     },
+
+    // ─────────────────────────────────────────────────────────────────────
+    // RETURN — fires when the payment WebView sheet dismisses.
+    //
+    // This fires BOTH after a successful payment redirect AND when the
+    // user manually closes the sheet.  We wait 2 seconds to give
+    // onPaymentResult a chance to fire first (it arrives slightly later
+    // after the bank redirect completes).
+    // ─────────────────────────────────────────────────────────────────────
     onReturn: () async {
-      debugPrint('🔙 User returned from payment WebView');
-      
-      // Grace period: Wait briefly to see if onPaymentResult or onMessage triggers success first.
-      // This solves the issue where hitting 'back' after a successful bank redirect 
-      // triggers onReturn before the platform bridge syncs the result.
-      await Future.delayed(const Duration(seconds: 1));
-      
+      debugPrint('🔙 onReturn — WebView sheet dismissed');
+
+      // Grace period: let onPaymentResult arrive if the payment succeeded.
+      await Future.delayed(const Duration(seconds: 2));
+
       if (!handled && context.mounted) {
+        // onPaymentResult never fired → user closed without completing payment.
         handled = true;
-        debugPrint('⚠️ No success result received within grace period. Navigating to Cancel Page.');
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PaymentCancelPage(message: 'You closed the payment process.')),
+        debugPrint('⚠️ No payment result received — treating as cancellation.');
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const PaymentCancelPage(
+              message: 'You closed the payment without completing it.',
+            ),
+          ),
         );
       }
     },
