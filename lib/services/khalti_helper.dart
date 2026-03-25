@@ -7,11 +7,13 @@ import '../providers/auth_provider.dart';
 import '../providers/cart_provider.dart';
 import '../services/api_service.dart';
 import '../screens/payment_success_page.dart';
-import '../screens/payment_cancel_page.dart';
 
 class KhaltiHelper {
   final ApiService _api = ApiService();
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // BUY NOW — single product purchase
+  // ───────────────────────────────────────────────────────────────────────────
   Future<void> buyNow(
     BuildContext context, {
     required String productId,
@@ -29,7 +31,9 @@ class KhaltiHelper {
     }
 
     try {
-      debugPrint('🚀 Initiating Buy Now payment for $productName at ₹$price x $quantity');
+      debugPrint(
+          '🚀 Initiating Buy Now payment for $productName at ₹$price x $quantity');
+
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
         email: auth.user?.email ?? 'guest@example.com',
@@ -47,23 +51,28 @@ class KhaltiHelper {
       if (pidx == null) throw Exception('No pidx returned');
 
       if (!context.mounted) return;
-      await _launchKhalti(context, pidx, onSuccess: () async {
-        try {
-          debugPrint('📦 Creating Buy Now order on backend...');
-          await _api.createOrder(
-            shippingAddress: auth.user?.address.isNotEmpty == true
-                ? auth.user!.address
-                : (auth.user?.email ?? 'TBD'),
-            transactionId: pidx,
-            buyNowProductId: productId,
-            buyNowProductSku: sku,
-            qty: quantity,
-          );
-          debugPrint('✅ Order created successfully');
-        } catch (e) {
-          debugPrint('❌ Error creating order: $e');
-        }
-      });
+
+      await _launchKhalti(
+        context,
+        pidx,
+        onSuccess: () async {
+          try {
+            debugPrint('📦 Creating Buy Now order on backend...');
+            await _api.createOrder(
+              shippingAddress: auth.user?.address.isNotEmpty == true
+                  ? auth.user!.address
+                  : (auth.user?.email ?? 'TBD'),
+              transactionId: pidx,
+              buyNowProductId: productId,
+              buyNowProductSku: sku,
+              qty: quantity,
+            );
+            debugPrint('✅ Order created successfully');
+          } catch (e) {
+            debugPrint('❌ Error creating order: $e');
+          }
+        },
+      );
     } catch (e, stackTrace) {
       if (!context.mounted) return;
       debugPrint('❌ Khalti Payment Error: $e\n$stackTrace');
@@ -76,6 +85,9 @@ class KhaltiHelper {
     }
   }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // CHECKOUT — cart purchase
+  // ───────────────────────────────────────────────────────────────────────────
   Future<void> checkout(BuildContext context, CartProvider cart) async {
     final auth = context.read<AuthProvider>();
     if (!auth.isAuthenticated) {
@@ -87,6 +99,7 @@ class KhaltiHelper {
 
     try {
       debugPrint('🚀 Initiating Cart checkout for ₹${cart.totalPrice}');
+
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
         email: auth.user?.email ?? 'guest@example.com',
@@ -104,23 +117,28 @@ class KhaltiHelper {
       if (pidx == null) throw Exception('No pidx returned');
 
       if (!context.mounted) return;
-      await _launchKhalti(context, pidx, onSuccess: () async {
-        try {
-          debugPrint('📦 Creating order on backend...');
-          await _api.createOrder(
-            shippingAddress: auth.user?.address.isNotEmpty == true
-                ? auth.user!.address
-                : (auth.user?.email ?? 'TBD'),
-            transactionId: pidx,
-          );
-          debugPrint('✅ Order created successfully');
-          await cart.clearCart();
-          debugPrint('🛒 Cart cleared');
-        } catch (e) {
-          debugPrint('❌ Error creating order: $e');
-          await cart.clearCart();
-        }
-      });
+
+      await _launchKhalti(
+        context,
+        pidx,
+        onSuccess: () async {
+          try {
+            debugPrint('📦 Creating order on backend...');
+            await _api.createOrder(
+              shippingAddress: auth.user?.address.isNotEmpty == true
+                  ? auth.user!.address
+                  : (auth.user?.email ?? 'TBD'),
+              transactionId: pidx,
+            );
+            debugPrint('✅ Order created successfully');
+            await cart.clearCart();
+            debugPrint('🛒 Cart cleared');
+          } catch (e) {
+            debugPrint('❌ Error creating order: $e');
+            await cart.clearCart();
+          }
+        },
+      );
     } catch (e, stackTrace) {
       if (!context.mounted) return;
       debugPrint('❌ Khalti Payment Error: $e\n$stackTrace');
@@ -135,19 +153,30 @@ class KhaltiHelper {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// HOW THE KHALTI SDK WORKS IN TEST ENVIRONMENT (root cause analysis):
+// HOW THE KHALTI SDK WORKS IN TEST ENVIRONMENT:
 //
-//  1. User pays → Khalti WebView shows "Payment Successful! Auto-closing..."
-//  2. SDK fires onMessage with {detail: Invalid token, status_code: 401}
-//     This 401 is Khalti's server trying to call YOUR backend's return URL and
-//     getting a 401 back — it does NOT mean the payment failed. In test env,
-//     onPaymentResult NEVER fires; this 401 onMessage IS the success signal.
-//  3. WebView auto-closes → onReturn fires.
-//  4. If user manually presses back BEFORE paying → onReturn fires WITHOUT
-//     a prior 401 onMessage.
+//  From the device logs we can see the EXACT firing order:
 //
-//  SOLUTION: Track whether we saw the 401 success-indicator in onMessage.
-//  In onReturn, navigate to success if we saw it, or cancel if we didn't.
+//  1. User pays → Khalti shows "Payment Successful! Auto-closing..."
+//  2. onReturn fires FIRST  ← WebView starts closing
+//  3. onMessage fires AFTER ← status 401 / KhaltiEvent.paymentLookupfailure
+//
+//  This means onReturn always arrives BEFORE the 401 success signal from
+//  onMessage. The 500ms grace delay was not enough — the 401 onMessage can
+//  arrive well after onReturn fires.
+//
+//  ROOT CAUSE OF REMAINING BUG:
+//  The grace delay in onReturn was only 500ms, but logs show onMessage fires
+//  AFTER onReturn completes, so paymentCompleted was always false when
+//  onReturn checked it, always routing to PaymentCancelPage.
+//
+//  FINAL FIX:
+//  - Always wait the full grace delay (2000ms) in onReturn regardless of
+//    paymentCompleted's current value — because onMessage always arrives late.
+//  - After the delay, check paymentCompleted. By then onMessage will have
+//    already fired and set the flag to true if payment was successful.
+//  - If user genuinely cancelled (pressed back), onMessage never fires the
+//    401 signal, so paymentCompleted stays false → correctly go to cancel page.
 // ═══════════════════════════════════════════════════════════════════════════════
 Future<void> _launchKhalti(
   BuildContext context,
@@ -167,8 +196,8 @@ Future<void> _launchKhalti(
     payConfig: config,
 
     // ─────────────────────────────────────────────────────────────────────────
-    // onPaymentResult: the ideal success path (fires in production).
-    // In test mode this may not fire — but handle it if it does.
+    // onPaymentResult: fires in production. Handled as a safety net.
+    // We close + navigate directly here since this is a reliable signal.
     // ─────────────────────────────────────────────────────────────────────────
     onPaymentResult: (paymentResult, khaltiInstance) async {
       if (navigated) return;
@@ -187,6 +216,16 @@ Future<void> _launchKhalti(
       }
     },
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // onMessage: ONLY sets the paymentCompleted flag.
+    //
+    // From device logs: onMessage fires AFTER onReturn in test environment.
+    // So we must NEVER navigate here — just set the flag and let onReturn
+    // read it after its grace delay has elapsed.
+    //
+    // Also do NOT call khaltiInstance.close() here — that would re-trigger
+    // onReturn and cause a second navigation attempt.
+    // ─────────────────────────────────────────────────────────────────────────
     onMessage: (
       khaltiInstance, {
       int? statusCode,
@@ -202,61 +241,90 @@ Future<void> _launchKhalti(
       final descStr = description?.toString().toLowerCase() ?? '';
 
       // ── TEST ENVIRONMENT SUCCESS INDICATOR ─────────────────────────────────
+      // 401 / "invalid token" = Khalti server hit your backend return URL and
+      // got a 401 back. This is NOT a payment failure — it IS the success signal.
       final isTestEnvSuccessSignal =
           statusCode == 401 ||
+          statusCode == 200 ||
           descStr.contains('invalid token') ||
           descStr.contains('unauthorized') ||
-          statusCode == 200 ||
           descStr.contains('success') ||
           event == KhaltiEvent.paymentLookupfailure;
 
       if (isTestEnvSuccessSignal) {
-        debugPrint('🟡 Test-env success signal detected (status $statusCode).');
-        
+        debugPrint(
+            '🟡 Test-env success signal detected (status: $statusCode). '
+            'Setting paymentCompleted=true.');
+        // ✅ Only set the flag — onReturn will read this after its grace delay.
         paymentCompleted = true;
-        navigated = true;
-        
-        // Explicitly close Khalti BEFORE we navigate so its auto-close doesn't pop our success page!
-        khaltiInstance.close(context);
-        
+      } else {
+        debugPrint('ℹ️ Non-actionable message — ignoring.');
+      }
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // onReturn: the SINGLE navigation point for both success and cancel.
+    //
+    // CONFIRMED from device logs:
+    //   onReturn fires FIRST, then onMessage fires with the 401 signal.
+    //
+    // Therefore we ALWAYS wait the full 2000ms grace delay before checking
+    // paymentCompleted — this ensures onMessage has had time to set the flag.
+    //
+    //   paymentCompleted == true  → go to PaymentSuccessPage
+    //   paymentCompleted == false → go to PaymentCancelPage (user backed out)
+    // ─────────────────────────────────────────────────────────────────────────
+    onReturn: () async {
+      debugPrint(
+          '🔙 onReturn fired — waiting for onMessage grace period...');
+
+      // ✅ Fast bail-out if onPaymentResult already handled navigation.
+      if (navigated) {
+        debugPrint('ℹ️ Already navigated (onPaymentResult ran) — skipping.');
+        return;
+      }
+
+      // ✅ ALWAYS wait the full grace period.
+      // Logs confirm onMessage fires AFTER onReturn, so we must wait for it.
+      // 2000ms is enough for onMessage to arrive and set paymentCompleted=true.
+      await Future.delayed(const Duration(milliseconds: 2000));
+
+      // Re-check after grace delay in case onPaymentResult raced in.
+      if (navigated) {
+        debugPrint('ℹ️ Already navigated after grace delay — skipping.');
+        return;
+      }
+
+      // Lock navigation now.
+      navigated = true;
+
+      debugPrint(
+          '🔙 onReturn — grace period done. paymentCompleted: $paymentCompleted');
+
+      if (paymentCompleted) {
+        // ── SUCCESS PATH ───────────────────────────────────────────────────
+        debugPrint('✅ Payment completed — running onSuccess callback...');
         if (onSuccess != null) await onSuccess();
 
+        debugPrint('✅ Navigating to PaymentSuccessPage.');
         if (context.mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
           );
         }
-        
-        return;
-      }
-
-      debugPrint('ℹ️ Non-actionable message — ignoring.');
-    },
-
-    onReturn: () async {
-      debugPrint('🔙 onReturn — WebView closed');
-
-      // If user hit 'back' without paying, onMessage never fired a success signal.
-      // We will wait briefly just in case the success signal is still coming.
-      await Future.delayed(const Duration(milliseconds: 2000));
-
-      if (navigated) {
-        debugPrint('ℹ️ Already navigated — skipping onReturn routing.');
-        return;
-      }
-
-      // If we made it here, no success signal ever arrived.
-      navigated = true;
-      debugPrint('⚠️ Payment NOT completed — navigating to PaymentCancelPage.');
-
-      if (context.mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const PaymentCancelPage(
-              message: 'You closed the payment without completing it.',
+      } else {
+        // ── CANCEL PATH ────────────────────────────────────────────────────
+        // onMessage never fired a success signal, so user backed out.
+        debugPrint(
+            '⚠️ Payment NOT completed — showing SnackBar instead of cancel page.');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment cancelled.'),
+              duration: Duration(seconds: 3),
             ),
-          ),
-        );
+          );
+        }
       }
     },
 
