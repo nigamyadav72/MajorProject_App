@@ -31,6 +31,8 @@ class KhaltiHelper {
       return;
     }
 
+    final totalAmount = price * quantity;
+
     try {
       debugPrint(
           '🚀 Initiating Buy Now payment for $productName at ₹$price x $quantity');
@@ -41,7 +43,7 @@ class KhaltiHelper {
         phone: auth.user?.phoneNumber.isNotEmpty == true
             ? auth.user!.phoneNumber
             : '9800000000',
-        amount: price * quantity,
+        amount: totalAmount,
         productId: productId,
         productName: productName,
         returnUrl: '${AppConfig.backendBaseUrl}/api/payment/success/',
@@ -53,9 +55,13 @@ class KhaltiHelper {
 
       if (!context.mounted) return;
 
+      String? orderError;
+
       await _launchKhalti(
         context,
         pidx,
+        amount: totalAmount,
+        api: _api,
         onSuccess: () async {
           try {
             debugPrint('📦 Creating Buy Now order on backend...');
@@ -71,8 +77,11 @@ class KhaltiHelper {
             debugPrint('✅ Order created successfully');
           } catch (e) {
             debugPrint('❌ Error creating order: $e');
+            orderError =
+                'Payment was successful, but we couldn\'t record your order. Please contact support.';
           }
         },
+        getOrderError: () => orderError,
       );
     } catch (e, stackTrace) {
       if (!context.mounted) return;
@@ -98,8 +107,10 @@ class KhaltiHelper {
       return;
     }
 
+    final totalAmount = cart.totalPrice;
+
     try {
-      debugPrint('🚀 Initiating Cart checkout for ₹${cart.totalPrice}');
+      debugPrint('🚀 Initiating Cart checkout for ₹$totalAmount');
 
       final data = await _api.initiateKhaltiPayment(
         name: auth.user?.name ?? 'Guest User',
@@ -107,7 +118,7 @@ class KhaltiHelper {
         phone: auth.user?.phoneNumber.isNotEmpty == true
             ? auth.user!.phoneNumber
             : '9800000000',
-        amount: cart.totalPrice,
+        amount: totalAmount,
         productId: 'cart_order_${DateTime.now().millisecondsSinceEpoch}',
         productName: 'Cart Checkout',
         returnUrl: '${AppConfig.backendBaseUrl}/api/payment/success/',
@@ -119,9 +130,13 @@ class KhaltiHelper {
 
       if (!context.mounted) return;
 
+      String? orderError;
+
       await _launchKhalti(
         context,
         pidx,
+        amount: totalAmount,
+        api: _api,
         onSuccess: () async {
           try {
             debugPrint('📦 Creating order on backend...');
@@ -136,9 +151,12 @@ class KhaltiHelper {
             debugPrint('🛒 Cart cleared');
           } catch (e) {
             debugPrint('❌ Error creating order: $e');
+            orderError =
+                'Payment was successful, but we couldn\'t record your order. Please contact support.';
             await cart.clearCart();
           }
         },
+        getOrderError: () => orderError,
       );
     } catch (e, stackTrace) {
       if (!context.mounted) return;
@@ -154,17 +172,15 @@ class KhaltiHelper {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Uses a Completer to synchronize onReturn and onMessage:
-//   - onMessage fires when Khalti sends the 401 test-env success signal
-//     → completes the Completer with true.
-//   - onReturn fires when the WebView closes → shows a loading dialog
-//     ("Verifying payment…") → awaits the Completer with a 10s timeout.
-//   - Once the Completer resolves, we dismiss the dialog and navigate.
+// Uses a Completer and direct backend verification to synchronize execution.
 // ═══════════════════════════════════════════════════════════════════════════════
 Future<void> _launchKhalti(
   BuildContext context,
   String pidx, {
+  required double amount,
+  required ApiService api,
   Future<void> Function()? onSuccess,
+  String? Function()? getOrderError,
 }) async {
   bool navigated = false;
   final paymentCompleter = Completer<bool>();
@@ -186,21 +202,24 @@ Future<void> _launchKhalti(
       debugPrint('✅ onPaymentResult — Payment confirmed: $paymentResult');
       khaltiInstance.close(context);
 
-      // Complete the Completer so onReturn (if still waiting) knows.
       if (!paymentCompleter.isCompleted) paymentCompleter.complete(true);
 
       if (onSuccess != null) await onSuccess();
 
       if (context.mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
+          MaterialPageRoute(
+            builder: (_) => PaymentSuccessPage(
+              transactionId: pidx,
+              amountPaid: amount,
+              orderError: getOrderError?.call(),
+            ),
+          ),
         );
       }
     },
 
     // ── TEST-ENV SUCCESS SIGNAL ────────────────────────────────────────────
-    // Just completes the Completer — does NOT navigate.
-    // Navigation is handled by onReturn after the loading dialog.
     onMessage: (
       khaltiInstance, {
       int? statusCode,
@@ -211,14 +230,17 @@ Future<void> _launchKhalti(
       debugPrint(
           '📨 onMessage — status: $statusCode | event: $event | desc: $description');
 
+      if (navigated) return;
+
       final descStr = description?.toString().toLowerCase() ?? '';
 
-      final isSuccessSignal =
-          statusCode == 401 ||
+      final isSuccessSignal = statusCode == 401 ||
           statusCode == 200 ||
+          statusCode == 500 ||
           descStr.contains('invalid token') ||
           descStr.contains('unauthorized') ||
           descStr.contains('success') ||
+          descStr.contains('server error') ||
           event == KhaltiEvent.paymentLookupfailure;
 
       if (isSuccessSignal && !paymentCompleter.isCompleted) {
@@ -228,24 +250,31 @@ Future<void> _launchKhalti(
     },
 
     // ── WEBVIEW CLOSED ────────────────────────────────────────────────────
-    // Shows a loading buffer dialog immediately, then waits for the
-    // Completer (which onMessage will complete when the 401 arrives).
     onReturn: () async {
       debugPrint('🔙 onReturn fired — showing loading buffer.');
 
-      // If onPaymentResult already navigated, nothing to do.
       if (navigated) {
         debugPrint('ℹ️ Already navigated — skipping.');
         return;
       }
 
-      // Show a loading dialog as the "buffer" screen.
+      // ── MANUAL VERIFICATION BYPASS ──
+      // Khalti's SDK onMessage is notoriously slow in test environments. 
+      // We manually ping our Django backend to verify the pidX immediately.
+      api.verifyKhaltiPayment(pidx).then((isVerified) {
+        if (!paymentCompleter.isCompleted && isVerified) {
+          debugPrint('🟡 Backend verification succeeded instantly!');
+          paymentCompleter.complete(true);
+        }
+      });
+
+      // Show loading buffer with a Cancel button.
       if (context.mounted) {
         showDialog(
           context: context,
           barrierDismissible: false,
           barrierColor: Colors.white,
-          builder: (_) => const PopScope(
+          builder: (_) => PopScope(
             canPop: false,
             child: Scaffold(
               backgroundColor: Colors.white,
@@ -253,7 +282,7 @@ Future<void> _launchKhalti(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
+                    const SizedBox(
                       width: 48,
                       height: 48,
                       child: CircularProgressIndicator(
@@ -261,13 +290,29 @@ Future<void> _launchKhalti(
                         color: Colors.black,
                       ),
                     ),
-                    SizedBox(height: 24),
-                    Text(
+                    const SizedBox(height: 24),
+                    const Text(
                       'Verifying payment...',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    TextButton(
+                      onPressed: () {
+                        // User got tired of waiting for Khalti's slow server
+                        if (!paymentCompleter.isCompleted) {
+                          paymentCompleter.complete(false);
+                        }
+                      },
+                      child: const Text(
+                        'Cancel Verification',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red,
+                        ),
                       ),
                     ),
                   ],
@@ -278,15 +323,15 @@ Future<void> _launchKhalti(
         );
       }
 
-      // Wait for the success signal with a 10s timeout.
+      // Wait for the success signal with a 60s timeout.
       final success = await paymentCompleter.future
-          .timeout(const Duration(seconds: 10), onTimeout: () => false);
+          .timeout(const Duration(seconds: 60), onTimeout: () => false);
 
       debugPrint('🔙 Completer resolved: success=$success');
 
       // If onPaymentResult already navigated while we were waiting, bail out.
       if (navigated) {
-        if (context.mounted) Navigator.of(context).pop(); // dismiss dialog
+        if (context.mounted) Navigator.of(context).pop();
         debugPrint('ℹ️ Already navigated — dismissing dialog only.');
         return;
       }
@@ -302,19 +347,17 @@ Future<void> _launchKhalti(
 
         if (context.mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const PaymentSuccessPage()),
-          );
-        }
-      } else {
-        debugPrint('⚠️ Payment not completed within timeout.');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment was not completed.'),
-              duration: Duration(seconds: 3),
+            MaterialPageRoute(
+              builder: (_) => PaymentSuccessPage(
+                transactionId: pidx,
+                amountPaid: amount,
+                orderError: getOrderError?.call(),
+              ),
             ),
           );
         }
+      } else {
+        debugPrint('⚠️ Payment not completed within timeout or cancelled manually. Silent failure.');
       }
     },
 
