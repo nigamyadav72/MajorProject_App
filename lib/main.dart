@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:majorproject_app/login_screen.dart';
-import 'package:majorproject_app/screens/onboarding_screen.dart';
 import 'package:majorproject_app/screens/intro_splash_screen.dart';
 
 import 'package:provider/provider.dart';
@@ -77,9 +76,7 @@ class _MyAppState extends State<MyApp> {
                 bodyMedium: TextStyle(color: Color(0xFF475569)),
               ),
             ),
-            home: auth.needsOnboarding
-                ? const OnboardingScreen()
-                : (auth.isAuthenticated ? const BottomNav() : const LoginPageThemeWrapper()),
+            home: auth.isAuthenticated ? const BottomNav() : const LoginPageThemeWrapper(),
           );
         },
       ),
