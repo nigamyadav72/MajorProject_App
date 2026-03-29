@@ -57,14 +57,23 @@ class PrivacySecurityPage extends StatelessWidget {
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy',
             subtitle: 'View our privacy policy',
-            onTap: () {},
+            onTap: () => _showTextDialog(
+              context,
+              'Privacy Policy',
+              'We value your privacy. Your data is collected to improve your experience. We do not sell your personal information to third parties. Our application uses modern encryption to ensure your data is always safe and secure. By using this service, you agree to our data practices as described in this policy.',
+            ),
           ),
           _SecurityOption(
             icon: Icons.description_outlined,
             title: 'Terms of Service',
             subtitle: 'Read our terms',
-            onTap: () {},
+            onTap: () => _showTextDialog(
+              context,
+              'Terms of Service',
+              'Welcome to our platform. These terms govern your use of our application. You must use the service legally and responsibly. We reserve the right to terminate access for users who violate these terms. The items purchased are subject to our refund policy. All intellectual property on this platform belongs to its respective owners.',
+            ),
           ),
+
           _SecurityOption(
             icon: Icons.delete_outline,
             title: 'Delete Account',
@@ -151,6 +160,29 @@ class PrivacySecurityPage extends StatelessWidget {
       ),
     );
   }
+
+  void _showTextDialog(BuildContext context, String title, String content) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Text(
+            content,
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class _SecurityOption extends StatelessWidget {

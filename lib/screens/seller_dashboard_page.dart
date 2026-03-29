@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/seller_provider.dart';
 import '../models/product.dart';
 import 'add_product_page.dart';
+import '../utils/image_url.dart';
+
 
 class SellerDashboardPage extends StatefulWidget {
   const SellerDashboardPage({super.key});
@@ -297,10 +299,11 @@ class _ProductListItem extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               image: product.imageUrl.isNotEmpty
                   ? DecorationImage(
-                      image: NetworkImage(product.imageUrl),
+                      image: NetworkImage(resolveImageUrl(product.imageUrl)),
                       fit: BoxFit.cover,
                     )
                   : null,
+
             ),
             child: product.imageUrl.isEmpty
                 ? const Icon(Icons.image_not_supported, color: Colors.grey)
@@ -496,7 +499,26 @@ class _SellerOrderListItem extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+                image: item.product.imageUrl.isNotEmpty
+                    ? DecorationImage(
+                        image: NetworkImage(resolveImageUrl(item.product.imageUrl)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: item.product.imageUrl.isEmpty
+                  ? const Icon(Icons.image_not_supported, size: 20, color: Colors.grey)
+                  : null,
+            ),
+            const SizedBox(width: 12),
             Expanded(
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
