@@ -25,6 +25,9 @@ dependencies:
   # Image picking
   image_picker: ^1.0.4
   
+  # Image cropping
+  image_cropper: ^7.1.0
+  
   # State management
   provider: ^6.0.5
   
