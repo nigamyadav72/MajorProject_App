@@ -334,28 +334,65 @@ class _HomePageState extends State<HomePage> {
         if (!mounted) return;
 
         // 🌿 Crop the image before searching
-        final CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: image.path,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Crop Image',
-              toolbarColor: const Color(0xFF0F172A),
-              toolbarWidgetColor: Colors.white,
-              activeControlsWidgetColor: const Color(0xFF6366F1),
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false,
-              hideBottomControls: false,
-            ),
-            IOSUiSettings(
-              title: 'Crop Image',
-              cancelButtonTitle: 'Cancel',
-              doneButtonTitle: 'Done',
-            ),
-          ],
-        );
+        String finalImagePath = image.path; // fallback to original
+        try {
+          debugPrint("Starting image cropper with path: ${image.path}");
+          final croppedFile = await ImageCropper().cropImage(
+            sourcePath: image.path,
+            uiSettings: [
+              AndroidUiSettings(
+                toolbarTitle: 'Crop Image',
+                toolbarColor: const Color(0xFF0F172A),
+                toolbarWidgetColor: Colors.white,
+                activeControlsWidgetColor: const Color(0xFF6366F1),
+                aspectRatioPresets: [
+                  CropAspectRatioPreset.original,
+                  CropAspectRatioPreset.square,
+                  CropAspectRatioPreset.ratio3x2,
+                  CropAspectRatioPreset.ratio4x3,
+                  CropAspectRatioPreset.ratio16x9,
+                ],
+                initAspectRatio: CropAspectRatioPreset.original,
+                lockAspectRatio: false,
+                hideBottomControls: false,
+              ),
+              IOSUiSettings(
+                title: 'Crop Image',
+                cancelButtonTitle: 'Cancel',
+                doneButtonTitle: 'Done',
+                aspectRatioPresets: [
+                  CropAspectRatioPreset.original,
+                  CropAspectRatioPreset.square,
+                  CropAspectRatioPreset.ratio3x2,
+                  CropAspectRatioPreset.ratio4x3,
+                  CropAspectRatioPreset.ratio16x9,
+                ],
+              ),
+            ],
+          );
 
-        // If user cancelled cropping, abort
-        if (croppedFile == null) return;
+          if (croppedFile != null) {
+            debugPrint("Cropping successful: ${croppedFile.path}");
+            finalImagePath = croppedFile.path;
+          } else {
+            debugPrint("Cropping cancelled by user or returned null, using original image");
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Using original image..."), duration: Duration(milliseconds: 500)),
+              );
+            }
+          }
+        } catch (e, stackTrace) {
+          debugPrint("Error cropping image: $e");
+          debugPrint("Stack trace: $stackTrace");
+          // Fall back to the original image
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Cropping unavailable, using original image")),
+            );
+          }
+        }
+
         if (!mounted) return;
 
         // Show loading
@@ -372,8 +409,8 @@ class _HomePageState extends State<HomePage> {
           ),
         );
 
-        // Perform visual search with cropped image
-        await context.read<ProductProvider>().visualSearch(File(croppedFile.path));
+        // Perform visual search with the image (cropped or original)
+        await context.read<ProductProvider>().visualSearch(File(finalImagePath));
 
         if (!mounted) return;
 
