@@ -39,7 +39,7 @@ class Product {
       price: (json['price'] is num)
           ? (json['price'] as num).toDouble()
           : double.tryParse(json['price']?.toString() ?? '0') ?? 0,
-      imageUrl: json['image_url']?.toString() ?? json['image']?.toString() ?? '',
+      imageUrl: _parseImageUrl(json),
       categories: [json['category_name']?.toString() ?? ''],
       rating: (json['rating_average'] is num)
           ? (json['rating_average'] as num).toDouble()
@@ -56,5 +56,18 @@ class Product {
           : double.tryParse(json['earnings']?.toString() ?? '0') ?? 0,
       isActive: json['is_active'] ?? true,
     );
+  }
+
+  static String _parseImageUrl(Map<String, dynamic> json) {
+    if (json['image_url'] != null && json['image_url'].toString().isNotEmpty && json['image_url'].toString() != 'null') {
+      return json['image_url'].toString();
+    }
+    if (json['primary_image'] != null && json['primary_image']['image'] != null && json['primary_image']['image'].toString().isNotEmpty) {
+      return json['primary_image']['image'].toString();
+    }
+    if (json['image'] != null && json['image'].toString().isNotEmpty && json['image'].toString() != 'null') {
+      return json['image'].toString();
+    }
+    return '';
   }
 }

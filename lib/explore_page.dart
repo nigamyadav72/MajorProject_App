@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import '../providers/product_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../widgets/product_card.dart';
@@ -82,31 +81,6 @@ class _ExplorePageState extends State<ExplorePage> {
       if (image != null) {
         if (!mounted) return;
 
-        // 🌿 Crop the image before searching
-        final CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: image.path,
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Crop Image',
-              toolbarColor: const Color(0xFF0F172A),
-              toolbarWidgetColor: Colors.white,
-              activeControlsWidgetColor: const Color(0xFF6366F1),
-              initAspectRatio: CropAspectRatioPreset.original,
-              lockAspectRatio: false,
-              hideBottomControls: false,
-            ),
-            IOSUiSettings(
-              title: 'Crop Image',
-              cancelButtonTitle: 'Cancel',
-              doneButtonTitle: 'Done',
-            ),
-          ],
-        );
-
-        // If user cancelled cropping, abort
-        if (croppedFile == null) return;
-        if (!mounted) return;
-
         // Show loading
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -121,8 +95,8 @@ class _ExplorePageState extends State<ExplorePage> {
           ),
         );
 
-        // Perform visual search with cropped image
-        await context.read<ProductProvider>().visualSearch(File(croppedFile.path));
+        // Perform visual search with original image
+        await context.read<ProductProvider>().visualSearch(File(image.path));
 
         // Navigate to dedicated results page
         if (!mounted) return;
